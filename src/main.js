@@ -795,7 +795,7 @@ function renderSettings() {
 
   wrap.appendChild(el('div', { className: 'settings-section-label', style: { marginTop: '10px' } }, 'SYSTEM'));
   const sysSection = el('div', { className: 'settings-section bevel-recessed' });
-  sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ SAKURA//OS v1.0'));
+  sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ lovebox//OS v1.0'));
   sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ lovebox · for sam'));
   wrap.appendChild(sysSection);
 

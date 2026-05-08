@@ -1065,6 +1065,23 @@ body.kb-just-closed #desktop {
   flex-direction: column;
   gap: 6px;
 }
+/* While the on-screen keyboard is up, float the password preview just above
+   it (keyboard is 220px tall, anchored at bottom of #app). This keeps the
+   field + actions visible without scrolling, regardless of how much else
+   is rendered above. z-index sits above the keyboard's z-index of 20. */
+body.kb-up .wifi-pw {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 226px;
+  margin-top: 0;
+  z-index: 25;
+  background: var(--win);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lo),
+    inset -1px -1px 0 var(--bevel-hi),
+    0 -2px 6px rgba(0,0,0,.25);
+}
 .wifi-pw-field {
   background: var(--cream);
   padding: 8px 10px;

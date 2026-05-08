@@ -1,4 +1,3 @@
-// Vanilla port of D1Keyboard from design_handoff_sakura_os_keyboard.
 // Touch-friendly QWERTY, beveled retro keys. Slides up from the bottom of its
 // containing relative-positioned parent. Sits above the 26px taskbar slot.
 

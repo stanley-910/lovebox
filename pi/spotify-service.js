@@ -172,11 +172,14 @@ async function pollPlayback(identity) {
     logApiError(identity, 'queue', queue);
     logApiError(identity, 'recently-played', recent);
 
+    // Merge-write so a transient API failure (or an inactive client) doesn't
+    // wipe the last known state — the receiver should keep showing the most
+    // recent track/queue/recent until fresh data arrives.
     const data = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    if (playing.status === 200 && playing.body) {
+    if (playing.status === 200 && playing.body && playing.body.item) {
       data.isPlaying = playing.body.is_playing || false;
       data.progressMs = playing.body.progress_ms || 0;
       data.nowPlaying = extractTrack(playing.body.item);
@@ -184,29 +187,24 @@ async function pollPlayback(identity) {
         name: playing.body.device.name,
         type: playing.body.device.type,
       } : null;
-    } else {
+    } else if (playing.status === 200 || playing.status === 204) {
+      // Client is reachable but nothing playing — flip the flag, keep the rest.
       data.isPlaying = false;
-      data.nowPlaying = null;
-      data.progressMs = 0;
-      data.device = null;
+    }
+    // On non-2xx (rate limit, transient error) leave everything untouched.
+
+    if (queue.status === 200 && queue.body && Array.isArray(queue.body.queue) && queue.body.queue.length > 0) {
+      data.queue = queue.body.queue.slice(0, 20).map(extractTrack);
     }
 
-    if (queue.status === 200 && queue.body) {
-      data.queue = (queue.body.queue || []).slice(0, 5).map(extractTrack);
-    } else {
-      data.queue = [];
-    }
-
-    if (recent.status === 200 && recent.body) {
-      data.recent = (recent.body.items || []).map(i => ({
+    if (recent.status === 200 && recent.body && Array.isArray(recent.body.items) && recent.body.items.length > 0) {
+      data.recent = recent.body.items.map(i => ({
         ...extractTrack(i.track),
         playedAt: i.played_at,
       }));
-    } else {
-      data.recent = [];
     }
 
-    await db.doc(`playback/${identity}`).set(data);
+    await db.doc(`playback/${identity}`).set(data, { merge: true });
   } catch (err) {
     console.error(`[${identity}] poll error:`, err.message);
   }
