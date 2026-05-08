@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send to Lovebox</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'VT323', monospace;
+      background: #c8c0b0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #e8e2d2;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #5a5040, inset 2px 2px 0 #fff8e8, inset -2px -2px 0 #8a8070, 2px 2px 0 rgba(0,0,0,.25);
+      width: 400px;
+      max-width: 95vw;
+    }
+    .title-bar {
+      background: #1a1410;
+      color: #f4ead8;
+      padding: 4px 8px;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .title-dot { width: 8px; height: 8px; background: #d8627a; }
+    .body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .label { font-size: 14px; color: #a83a52; }
+    textarea {
+      width: 100%;
+      height: 120px;
+      resize: none;
+      border: none;
+      background: #f4ead8;
+      box-shadow: inset 1px 1px 0 #5a5040, inset -1px -1px 0 #fff;
+      padding: 8px;
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      color: #1a1410;
+      outline: none;
+    }
+    .btn {
+      background: #d8627a;
+      color: #f4ead8;
+      box-shadow: inset 1px 1px 0 #fff8, inset -1px -1px 0 #0006;
+      border: none;
+      cursor: pointer;
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      padding: 8px 16px;
+      width: 100%;
+    }
+    .btn:active { box-shadow: inset 1px 1px 0 #5a5040, inset -1px -1px 0 #fff; }
+    .btn.sent { background: #4a7a4a; }
+    .status { font-size: 14px; color: #5a5040; text-align: center; }
+    .divider { border: none; border-top: 1px dashed #7a7060; }
+    .recent { font-size: 14px; color: #5a5040; }
+    .recent-msg { padding: 4px 0; border-bottom: 1px dotted rgba(0,0,0,.1); font-size: 16px; color: #1a1410; }
+    .recent-meta { font-size: 13px; color: #a83a52; }
+    .mood-section { display: flex; flex-direction: column; gap: 6px; }
+    .mood-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .mood-btn {
+      background: #f4ead8;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #5a5040;
+      border: none;
+      cursor: pointer;
+      font-family: 'VT323', monospace;
+      font-size: 14px;
+      padding: 6px 4px;
+      color: #1a1410;
+    }
+    .mood-btn.active {
+      background: #d8627a;
+      color: #f4ead8;
+      box-shadow: inset 1px 1px 0 #5a5040, inset -1px -1px 0 #fff;
+    }
+    .draw-section { display: flex; flex-direction: column; gap: 6px; }
+    .draw-canvas-container {
+      position: relative;
+      background: #f4ead8;
+      box-shadow: inset 1px 1px 0 #5a5040, inset -1px -1px 0 #fff;
+    }
+    .draw-canvas-container canvas {
+      width: 100%;
+      display: block;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .draw-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .draw-toolbar .swatch {
+      width: 22px;
+      height: 16px;
+      border: none;
+      cursor: pointer;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #5a5040;
+    }
+    .draw-toolbar .swatch.active {
+      box-shadow: inset 0 0 0 2px #f4ead8, inset 0 0 0 3px #1a1410;
+    }
+    .draw-toolbar .tool-btn {
+      background: #e8e2d2;
+      box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #5a5040;
+      border: none;
+      font-family: 'VT323', monospace;
+      font-size: 14px;
+      padding: 2px 6px;
+      cursor: pointer;
+      color: #1a1410;
+    }
+    .draw-toolbar .tool-btn:active {
+      box-shadow: inset 1px 1px 0 #5a5040, inset -1px -1px 0 #fff;
+    }
+    .draw-toolbar .spacer { flex: 1; }
+    .login-wrap { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .login-input {
+      width: 100%;
+      border: none;
+      background: #f4ead8;
+      box-shadow: inset 1px 1px 0 #5a5040, inset -1px -1px 0 #fff;
+      padding: 8px;
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      color: #1a1410;
+      outline: none;
+    }
+    .login-error { font-size: 14px; color: #a83a52; }
+    .app-content { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title-bar">
+      <div class="title-dot"></div>
+      SEND.EXE — lovebox
+    </div>
+    <div id="login" class="login-wrap">
+      <div class="label">LOGIN.SYS</div>
+      <input class="login-input" id="loginEmail" type="email" placeholder="email">
+      <input class="login-input" id="loginPass" type="password" placeholder="password">
+      <button class="btn" id="loginBtn">sign in ▸</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+    <div class="body app-content" id="appContent">
+      <div class="label">MESSAGE TO SAM</div>
+      <textarea id="msg" placeholder="write something…"></textarea>
+      <button class="btn" id="sendBtn" onclick="send()">send ▸</button>
+      <div class="status" id="status"></div>
+
+      <hr class="divider">
+
+      <div class="draw-section">
+        <div class="label">SHARED CANVAS</div>
+        <div class="draw-canvas-container">
+          <canvas id="drawCanvas"></canvas>
+        </div>
+        <div class="draw-toolbar" id="drawToolbar"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="mood-section">
+        <div class="label">SET YOUR MOOD</div>
+        <div class="mood-grid" id="moodGrid"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="label">RECENT</div>
+      <div id="recent"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js';
+    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch, doc } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
+    import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js';
+
+    const app = initializeApp({
+      apiKey: "VITE_FIREBASE_API_KEY",
+      authDomain: "lovebox-5716a.firebaseapp.com",
+      projectId: "lovebox-5716a",
+      storageBucket: "lovebox-5716a.firebasestorage.app",
+      messagingSenderId: "VITE_FIREBASE_MESSAGING_SENDER_ID",
+      appId: "VITE_FIREBASE_APP_ID",
+    });
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    function showApp() {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('appContent').style.display = 'flex';
+      initApp();
+    }
+
+    async function doLogin(email, pass) {
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        localStorage.setItem('lb_email', email);
+        localStorage.setItem('lb_pass', pass);
+        showApp();
+      } catch (err) {
+        document.getElementById('loginError').textContent = err.message;
+        document.getElementById('loginBtn').textContent = 'sign in ▸';
+      }
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPass').value;
+      if (!email || !pass) return;
+      document.getElementById('loginBtn').textContent = '...';
+      doLogin(email, pass);
+    });
+
+    document.getElementById('loginPass').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('loginBtn').click();
+    });
+
+    // Auto-login from saved credentials
+    const savedEmail = localStorage.getItem('lb_email');
+    const savedPass = localStorage.getItem('lb_pass');
+    if (savedEmail && savedPass) {
+      document.getElementById('loginEmail').value = savedEmail;
+      document.getElementById('loginPass').value = savedPass;
+      document.getElementById('loginBtn').textContent = '...';
+      doLogin(savedEmail, savedPass);
+    }
+
+    function initApp() {
+
+    const moods = [
+      { k: 'sleepy', t: 'sleepy' },
+      { k: 'thinking', t: 'thinking' },
+      { k: 'busy', t: 'busy' },
+      { k: 'happy', t: 'happy' },
+      { k: 'missing', t: 'missing u' },
+      { k: 'coffee', t: 'coffee' },
+    ];
+
+    let currentMood = 'thinking';
+    const moodGrid = document.getElementById('moodGrid');
+    moods.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = `mood-btn ${m.k === currentMood ? 'active' : ''}`;
+      btn.textContent = m.t;
+      btn.onclick = async () => {
+        currentMood = m.k;
+        moodGrid.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        await addDoc(collection(db, 'status'), {
+          mood: m.k,
+          from: 'him',
+          timestamp: serverTimestamp(),
+        });
+        document.getElementById('status').textContent = `mood set: ${m.t}`;
+        setTimeout(() => document.getElementById('status').textContent = '', 1600);
+      };
+      moodGrid.appendChild(btn);
+    });
+
+    window.send = async function() {
+      const textarea = document.getElementById('msg');
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('sendBtn');
+      await addDoc(collection(db, 'messages'), {
+        text,
+        from: 'him',
+        timestamp: serverTimestamp(),
+        read: false,
+        type: 'text',
+        mood: '',
+      });
+
+      textarea.value = '';
+      btn.textContent = '✓ sent';
+      btn.classList.add('sent');
+      setTimeout(() => {
+        btn.textContent = 'send ▸';
+        btn.classList.remove('sent');
+      }, 1600);
+    };
+
+    const q = query(collection(db, 'messages'), orderBy('timestamp', 'desc'), limit(5));
+    onSnapshot(q, (snapshot) => {
+      const recent = document.getElementById('recent');
+      recent.innerHTML = '';
+      snapshot.forEach(d => {
+        const data = d.data();
+        const div = document.createElement('div');
+        div.className = 'recent-msg';
+        const meta = document.createElement('span');
+        meta.className = 'recent-meta';
+        meta.textContent = `${data.from} · `;
+        div.appendChild(meta);
+        div.appendChild(document.createTextNode(data.text || '(drawing)'));
+        recent.appendChild(div);
+      });
+    });
+
+    // ── Shared Canvas ──
+    const DRAW_COLORS = ['#1a1410', '#a83a52', '#4a7a4a', '#5a78a8', '#c89020', '#9a4a8a'];
+    let drawColor = '#a83a52';
+    let currentStroke = null;
+    let canvasStrokes = [];
+    let redoStack = [];
+
+    const drawCanvas = document.getElementById('drawCanvas');
+    drawCanvas.width = 520;
+    drawCanvas.height = 340;
+    const drawCtx = drawCanvas.getContext('2d');
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = 520;
+    offscreen.height = 340;
+    const offCtx = offscreen.getContext('2d');
+    offCtx.fillStyle = '#f4ead8';
+    offCtx.fillRect(0, 0, 520, 340);
+    drawCtx.drawImage(offscreen, 0, 0);
+
+    function drawStrokeOn(ctx, stroke) {
+      if (!stroke.points || stroke.points.length < 2) return;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.width || 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      for (let i = 1; i < stroke.points.length; i++) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      }
+      ctx.stroke();
+    }
+
+    function renderCommitted() {
+      offCtx.fillStyle = '#f4ead8';
+      offCtx.fillRect(0, 0, 520, 340);
+      for (const s of canvasStrokes) drawStrokeOn(offCtx, s);
+      composite();
+    }
+
+    function composite() {
+      drawCtx.drawImage(offscreen, 0, 0);
+      if (currentStroke) drawStrokeOn(drawCtx, currentStroke);
+    }
+
+    let drawing = false;
+    function point(e) {
+      const r = drawCanvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return {
+        x: Math.round(((t.clientX - r.left) / r.width) * drawCanvas.width),
+        y: Math.round(((t.clientY - r.top) / r.height) * drawCanvas.height),
+      };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      drawing = true;
+      currentStroke = { points: [point(e)], color: drawColor, width: 3, from: 'him' };
+    }
+    function moveDraw(e) {
+      if (!drawing || !currentStroke) return;
+      e.preventDefault();
+      currentStroke.points.push(point(e));
+      composite();
+    }
+    function endDraw() {
+      if (!drawing || !currentStroke) return;
+      drawing = false;
+      if (currentStroke.points.length > 1) {
+        addDoc(collection(db, 'canvas_strokes'), {
+          points: currentStroke.points,
+          color: currentStroke.color,
+          width: currentStroke.width,
+          from: currentStroke.from,
+          timestamp: serverTimestamp(),
+        });
+        redoStack = [];
+      }
+      currentStroke = null;
+    }
+
+    drawCanvas.addEventListener('mousedown', startDraw);
+    drawCanvas.addEventListener('touchstart', startDraw);
+    drawCanvas.addEventListener('mousemove', moveDraw);
+    drawCanvas.addEventListener('touchmove', moveDraw);
+    drawCanvas.addEventListener('mouseup', endDraw);
+    drawCanvas.addEventListener('mouseleave', endDraw);
+    drawCanvas.addEventListener('touchend', endDraw);
+
+    const canvasQ = query(collection(db, 'canvas_strokes'), orderBy('timestamp', 'asc'));
+    onSnapshot(canvasQ, (snapshot) => {
+      canvasStrokes = [];
+      snapshot.forEach(d => canvasStrokes.push({ id: d.id, ...d.data() }));
+      renderCommitted();
+    });
+
+    const toolbar = document.getElementById('drawToolbar');
+    DRAW_COLORS.forEach(c => {
+      const s = document.createElement('button');
+      s.className = `swatch ${drawColor === c ? 'active' : ''}`;
+      s.style.background = c;
+      s.onclick = () => {
+        drawColor = c;
+        toolbar.querySelectorAll('.swatch').forEach(x => x.classList.remove('active'));
+        s.classList.add('active');
+      };
+      toolbar.appendChild(s);
+    });
+
+    const spacer = document.createElement('div');
+    spacer.className = 'spacer';
+    toolbar.appendChild(spacer);
+
+    ['undo', 'redo', 'clear'].forEach(action => {
+      const btn = document.createElement('button');
+      btn.className = 'tool-btn';
+      btn.textContent = action;
+      btn.onclick = async () => {
+        if (action === 'undo') {
+          const mine = canvasStrokes.filter(s => s.from === 'him');
+          if (!mine.length) return;
+          const last = mine[mine.length - 1];
+          redoStack.push({ points: last.points, color: last.color, width: last.width, from: last.from });
+          await deleteDoc(doc(db, 'canvas_strokes', last.id));
+        } else if (action === 'redo') {
+          if (!redoStack.length) return;
+          const stroke = redoStack.pop();
+          await addDoc(collection(db, 'canvas_strokes'), { ...stroke, timestamp: serverTimestamp() });
+        } else {
+          redoStack = [];
+          const snap = await getDocs(collection(db, 'canvas_strokes'));
+          const b = writeBatch(db);
+          snap.forEach(d => b.delete(d.ref));
+          await b.commit();
+        }
+      };
+      toolbar.appendChild(btn);
+    });
+
+    } // end initApp
+  </script>
+</body>
+</html>

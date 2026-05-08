@@ -1,0 +1,18 @@
+[Unit]
+Description=Lovebox Spotify Polling Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=stanley
+WorkingDirectory=/home/stanley/lovebox
+Environment=SPOTIFY_CLIENT_ID=REPLACE_ME
+Environment=SPOTIFY_CLIENT_SECRET=REPLACE_ME
+Environment=GOOGLE_APPLICATION_CREDENTIALS=/home/stanley/.lovebox-firebase-admin.json
+ExecStart=/usr/bin/node /home/stanley/lovebox/pi/spotify-service.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

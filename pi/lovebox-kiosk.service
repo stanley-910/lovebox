@@ -1,0 +1,30 @@
+[Unit]
+Description=Lovebox Chromium Kiosk
+After=graphical.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=stanley
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/stanley/.Xauthority
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/chromium \
+  --kiosk \
+  --noerrdialogs \
+  --disable-infobars \
+  --disable-extensions \
+  --disable-session-crashed-bubble \
+  --password-store=basic \
+  --no-first-run \
+  --no-default-browser-check \
+  --disable-translate \
+  --disable-features=TranslateUI \
+  --check-for-update-interval=31536000 \
+  --autoplay-policy=no-user-gesture-required \
+  http://localhost:3000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
