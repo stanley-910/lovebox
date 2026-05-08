@@ -108,7 +108,7 @@ function makeKey(p, { label, kind = 'char', flex = 1, onPress, soundKind, ariaLa
     border: 'none',
     cursor: 'pointer',
     fontFamily: '"VT323", "Courier New", monospace',
-    fontSize: '18px',
+    fontSize: '24px',
     lineHeight: '1',
     userSelect: 'none',
     touchAction: 'manipulation',
@@ -166,6 +166,8 @@ export function createKeyboard(opts = {}) {
   let labelText = opts.label || 'KEYS.SYS';
   let isOpen = false;
 
+  // When the keyboard is up the taskbar hides (see body.kb-up in style.css),
+  // so the keyboard sits flush at bottom: 0 and reclaims that vertical space.
   const root = document.createElement('div');
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'On-screen keyboard');
@@ -174,7 +176,7 @@ export function createKeyboard(opts = {}) {
     position: 'absolute',
     left: '0',
     right: '0',
-    bottom: '36px', // taskbar height (see #taskbar in style.css)
+    bottom: '0',
     height: height + 'px',
     background: p.chrome,
     boxShadow: `inset 0 1px 0 ${p.bevelHi}, 0 -2px 0 ${p.bevelLo}`,
@@ -341,6 +343,7 @@ export function createKeyboard(opts = {}) {
   function open() {
     if (isOpen) return;
     isOpen = true;
+    document.body.classList.add('kb-up');
     root.style.display = 'flex';
     root.style.animation = 'kbslideup 180ms cubic-bezier(.2,.7,.3,1) both';
     rebuild();
@@ -349,6 +352,7 @@ export function createKeyboard(opts = {}) {
   function close() {
     if (!isOpen) return;
     isOpen = false;
+    document.body.classList.remove('kb-up');
     root.style.display = 'none';
   }
 

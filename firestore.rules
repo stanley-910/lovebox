@@ -48,5 +48,10 @@ service cloud.firestore {
       allow create: if authed();
       allow update, delete: if false;
     }
+
+    match /geo/{identityId} {
+      allow read: if authed();
+      allow write: if authed() && identityId == identity(request.auth.uid);
+    }
   }
 }

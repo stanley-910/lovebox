@@ -1,4 +1,4 @@
-import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity, subscribePlayback } from './firebase.js';
+import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity, subscribePlayback, subscribeGeo } from './firebase.js';
 import { createKeyboard } from './keyboard.js';
 import { getWifiStatus, scanWifi, connectWifi } from './wifi.js';
 
@@ -18,7 +18,7 @@ const MOODS = [
   { k: 'busy',     ascii: '[> _ <]',       t: 'heads down',      status: 'heads down ◧' },
   { k: 'happy',    ascii: '\\( ^ ω ^ )/',  t: 'happy today',     status: 'awake & humming' },
   { k: 'missing',  ascii: '( ; _ ; )♡',   t: 'missing you',     status: 'missing you ♡' },
-  { k: 'coffee',   ascii: '☕ ( ◑ ◡ ◑ )', t: 'caffeinated',     status: 'caffeinated ☕' },
+  { k: 'coffee',   ascii: 'c[_] ( ◑ ◡ ◑ )', t: 'caffeinated',  status: 'caffeinated c[_]' },
 ];
 
 const DRAW_COLORS = ['#1a1410', '#a83a52', '#4a7a4a', '#5a78a8', '#c89020', '#9a4a8a'];
@@ -69,10 +69,63 @@ const state = {
   wifiPwSsid: null,
   wifiPwInput: '',
   wifiFeedback: null,
+  geo: { him: null, her: { lat: 40.7128, lon: -74.006, label: 'new york' } },
+  weather: { him: null, her: null },
 };
 
 function partnerIdentity() {
   return state.identity === 'him' ? 'her' : 'him';
+}
+
+// ── Weather (Open-Meteo, no API key) ──
+const WMO_DESC = {
+  0: 'clear', 1: 'clear', 2: 'p.cloudy', 3: 'overcast',
+  45: 'fog', 48: 'fog',
+  51: 'drizzle', 53: 'drizzle', 55: 'drizzle',
+  56: 'icy drizzle', 57: 'icy drizzle',
+  61: 'rain', 63: 'rain', 65: 'heavy rain',
+  66: 'icy rain', 67: 'icy rain',
+  71: 'snow', 73: 'snow', 75: 'heavy snow', 77: 'snow',
+  80: 'showers', 81: 'showers', 82: 'showers',
+  85: 'snow show', 86: 'snow show',
+  95: 'thunder', 96: 'thunder', 99: 'thunder',
+};
+
+async function fetchWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('weather fetch failed');
+  const data = await res.json();
+  const c = data.current || {};
+  return {
+    temp: Math.round(c.temperature_2m),
+    desc: WMO_DESC[c.weather_code] || '—',
+  };
+}
+
+async function refreshWeatherFor(key) {
+  const g = state.geo[key];
+  if (!g || g.lat == null || g.lon == null) return;
+  try {
+    state.weather[key] = await fetchWeather(g.lat, g.lon);
+    if (state.active === 'home') render();
+  } catch (e) {
+    // network blip — leave stale data in place
+  }
+}
+
+function refreshAllWeather() {
+  refreshWeatherFor('him');
+  refreshWeatherFor('her');
+}
+
+function fmtWeatherLine(key) {
+  const g = state.geo[key];
+  const w = state.weather[key];
+  if (!g) return '○ — · location not set';
+  const label = g.label || `${g.lat.toFixed(1)},${g.lon.toFixed(1)}`;
+  if (!w) return `○ ${label} · loading…`;
+  return `○ ${label} · ${w.temp}° ${w.desc}`;
 }
 
 document.documentElement.setAttribute('data-theme', state.theme);
@@ -81,7 +134,7 @@ document.documentElement.setAttribute('data-theme', state.theme);
 let keyboard = null;
 function ensureKeyboard() {
   if (keyboard) return keyboard;
-  keyboard = createKeyboard({ theme: state.theme, height: 220 });
+  keyboard = createKeyboard({ theme: state.theme, height: 280 });
   document.getElementById('app').appendChild(keyboard.el);
   return keyboard;
 }
@@ -203,8 +256,8 @@ function renderHome() {
       ),
     ),
     el('div', { className: 'home-footer' },
-      el('span', {}, '○ tokyo · 64° clear'),
-      el('span', {}, '○ sf · 58° fog'),
+      el('span', {}, fmtWeatherLine('her')),
+      el('span', {}, fmtWeatherLine('him')),
     ),
   );
 
@@ -500,8 +553,7 @@ function renderNote() {
   wrap.appendChild(el('div', { className: 'note-to' }, 'TO: sam@home ◂ FROM: me'));
 
   const display = el('div', {
-    className: `note-text-display bevel-recessed ${state.noteText ? '' : 'empty'}`,
-    'data-placeholder': 'type a tiny letter…',
+    className: 'note-text-display bevel-recessed',
     onClick: () => {
       const kb = ensureKeyboard();
       if (!kb.isOpen()) { bindNoteKeyboard(); kb.open(); }
@@ -516,7 +568,6 @@ function renderNote() {
 
   function refreshDisplay() {
     display.textContent = state.noteText;
-    display.classList.toggle('empty', !state.noteText);
     display.appendChild(caret);
     charCount.textContent = `${state.noteText.length} chars`;
     display.scrollTop = display.scrollHeight;
@@ -1105,6 +1156,15 @@ function boot() {
     state.playbackReceivedAt = Date.now();
     if (state.active === 'play') render();
   });
+
+  // Alex's location is settable via send.html; Sam's box stays in New York.
+  subscribeGeo('him', (geo) => {
+    state.geo.him = geo;
+    refreshWeatherFor('him');
+  });
+  refreshWeatherFor('her');
+  // Re-poll weather every 10 minutes.
+  setInterval(refreshAllWeather, 10 * 60 * 1000);
 
   render();
 

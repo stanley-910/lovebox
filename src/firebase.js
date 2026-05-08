@@ -9,6 +9,7 @@ import {
   limit,
   onSnapshot,
   updateDoc,
+  setDoc,
   deleteDoc,
   getDocs,
   writeBatch,
@@ -185,6 +186,23 @@ export async function sendSpotifyCommand(action, uri, target) {
     uri,
     target,
     executed: false,
+    timestamp: serverTimestamp(),
+  });
+}
+
+// ── Geolocation ──
+
+export function subscribeGeo(identity, callback) {
+  return onSnapshot(doc(db, 'geo', identity), (snap) => {
+    callback(snap.exists() ? snap.data() : null);
+  });
+}
+
+export async function setGeo(identity, geo) {
+  await setDoc(doc(db, 'geo', identity), {
+    lat: geo.lat,
+    lon: geo.lon,
+    label: geo.label || '',
     timestamp: serverTimestamp(),
   });
 }

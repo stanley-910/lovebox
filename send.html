@@ -193,6 +193,16 @@
 
       <hr class="divider">
 
+      <div class="draw-section">
+        <div class="label">YOUR LOCATION (for weather)</div>
+        <div id="geoCurrent" style="font-size:15px;color:#5a5040;">loading...</div>
+        <input class="login-input" id="geoInput" type="text" placeholder="address, city, or lat,lon" style="height:auto;padding:6px 8px;font-size:16px;">
+        <button class="btn" id="geoBtn" style="font-size:16px;padding:6px;">save location ▸</button>
+        <div class="status" id="geoStatus"></div>
+      </div>
+
+      <hr class="divider">
+
       <div class="label">RECENT</div>
       <div id="recent"></div>
     </div>
@@ -200,7 +210,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js';
-    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch, doc } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
     import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js';
 
     const app = initializeApp({
@@ -512,6 +522,57 @@
     }
     bindPlayback('him', 'myPlayback', 'you aren\'t playing anything');
     bindPlayback('her', 'herPlayback', 'sam isn\'t playing anything');
+
+    // ── Geolocation (drives home-screen weather) ──
+    const geoCurrent = document.getElementById('geoCurrent');
+    const geoInput = document.getElementById('geoInput');
+    const geoBtn = document.getElementById('geoBtn');
+    const geoStatus = document.getElementById('geoStatus');
+
+    onSnapshot(doc(db, 'geo', 'him'), (snap) => {
+      if (!snap.exists()) { geoCurrent.textContent = 'not set'; return; }
+      const g = snap.data();
+      geoCurrent.textContent = `${g.label || '(no label)'} · ${g.lat.toFixed(3)}, ${g.lon.toFixed(3)}`;
+    });
+
+    async function resolveLocation(input) {
+      const s = input.trim();
+      if (!s) return null;
+      // "lat,lon" form
+      const coordMatch = s.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+      if (coordMatch) {
+        return { lat: parseFloat(coordMatch[1]), lon: parseFloat(coordMatch[2]), label: `${coordMatch[1]},${coordMatch[2]}` };
+      }
+      // Geocode via Open-Meteo (no API key)
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(s)}&count=1&language=en&format=json`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('geocode failed');
+      const data = await res.json();
+      const r = (data.results || [])[0];
+      if (!r) return null;
+      const label = (r.name || s).toLowerCase();
+      return { lat: r.latitude, lon: r.longitude, label };
+    }
+
+    geoBtn.onclick = async () => {
+      const raw = geoInput.value;
+      geoStatus.textContent = 'looking up…';
+      try {
+        const loc = await resolveLocation(raw);
+        if (!loc) { geoStatus.textContent = 'not found'; return; }
+        await setDoc(doc(db, 'geo', 'him'), {
+          lat: loc.lat,
+          lon: loc.lon,
+          label: loc.label,
+          timestamp: serverTimestamp(),
+        });
+        geoInput.value = '';
+        geoStatus.textContent = `saved: ${loc.label}`;
+        setTimeout(() => geoStatus.textContent = '', 2000);
+      } catch (err) {
+        geoStatus.textContent = `error: ${err.message}`;
+      }
+    };
 
     } // end initApp
   </script>
