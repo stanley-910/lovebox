@@ -592,6 +592,26 @@ function fmtDuration(ms) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function estimateProgress(pb) {
+  if (!pb || !pb.nowPlaying) return 0;
+  const base = pb.progressMs || 0;
+  if (!pb.isPlaying) return base;
+  const elapsed = Date.now() - (state.playbackReceivedAt || Date.now());
+  return Math.min(base + elapsed, pb.nowPlaying.durationMs || base);
+}
+
+function tickMusicProgress() {
+  const pb = state.partnerPlayback;
+  if (!pb || !pb.nowPlaying || !pb.isPlaying) return;
+  const progress = estimateProgress(pb);
+  const duration = pb.nowPlaying.durationMs || 1;
+  const pct = Math.min((progress / duration) * 100, 100);
+  const fill = document.getElementById('music-prog-fill');
+  const cur = document.getElementById('music-time-cur');
+  if (fill) fill.style.width = pct + '%';
+  if (cur) cur.textContent = fmtDuration(progress);
+}
+
 function renderMusic() {
   const pb = state.partnerPlayback;
   const wrap = el('div', { className: 'music-wrap' });
@@ -622,14 +642,14 @@ function renderMusic() {
     ),
   ));
 
-  const progress = pb.progressMs || 0;
   const duration = track.durationMs || 1;
+  const progress = estimateProgress(pb);
   const pct = Math.min((progress / duration) * 100, 100);
   const progressBar = el('div', { className: 'music-progress' },
-    el('div', { className: 'music-progress-fill', style: { width: pct + '%' } }),
+    el('div', { className: 'music-progress-fill', id: 'music-prog-fill', style: { width: pct + '%' } }),
   );
   const times = el('div', { className: 'music-times' },
-    el('span', {}, fmtDuration(progress)),
+    el('span', { id: 'music-time-cur' }, fmtDuration(progress)),
     el('span', {}, pb.isPlaying ? '▸ playing' : '❚❚ paused'),
     el('span', {}, fmtDuration(duration)),
   );
@@ -875,6 +895,7 @@ function boot() {
 
   subscribePlayback(partnerIdentity(), (data) => {
     state.partnerPlayback = data;
+    state.playbackReceivedAt = Date.now();
     if (state.active === 'play') render();
   });
 
@@ -883,6 +904,10 @@ function boot() {
   setInterval(() => {
     if (state.active === 'home') {
       render();
+    } else if (state.active === 'play') {
+      tickMusicProgress();
+      const clockBtn = document.querySelector('.tb-clock');
+      if (clockBtn) clockBtn.textContent = fmtTime(new Date());
     } else {
       const clockBtn = document.querySelector('.tb-clock');
       if (clockBtn) clockBtn.textContent = fmtTime(new Date());
