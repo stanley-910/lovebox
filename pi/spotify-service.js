@@ -71,7 +71,12 @@ function httpsRequest(method, url, headers, body) {
       let data = '';
       res.on('data', (c) => data += c);
       res.on('end', () => {
-        resolve({ status: res.statusCode, body: data ? JSON.parse(data) : null });
+        let body = null;
+        if (data) {
+          try { body = JSON.parse(data); }
+          catch { body = null; }
+        }
+        resolve({ status: res.statusCode, body, raw: data });
       });
     });
     req.on('error', reject);
@@ -101,7 +106,8 @@ async function refreshToken(identity) {
     saveTokenFile(identity, t);
     console.log(`[${identity}] token refreshed`);
   } else {
-    console.error(`[${identity}] token refresh failed:`, res.body);
+    console.error(`[${identity}] token refresh failed: status=${res.status} body=${(res.raw || '').slice(0, 200)}`);
+    return null;
   }
   return t.access_token;
 }
@@ -143,6 +149,16 @@ function extractTrack(item) {
   };
 }
 
+const lastErrLog = {};
+function logApiError(identity, label, res) {
+  if (!res || res.status < 400) return;
+  const key = `${identity}:${label}:${res.status}`;
+  const now = Date.now();
+  if (lastErrLog[key] && now - lastErrLog[key] < 60_000) return;
+  lastErrLog[key] = now;
+  console.error(`[${identity}] ${label} status=${res.status} body=${(res.raw || '').slice(0, 200)}`);
+}
+
 async function pollPlayback(identity) {
   if (!tokens[identity]) return;
   try {
@@ -151,6 +167,10 @@ async function pollPlayback(identity) {
       spotifyGet(identity, '/me/player/queue'),
       spotifyGet(identity, '/me/player/recently-played?limit=5'),
     ]);
+
+    logApiError(identity, 'currently-playing', playing);
+    logApiError(identity, 'queue', queue);
+    logApiError(identity, 'recently-played', recent);
 
     const data = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),

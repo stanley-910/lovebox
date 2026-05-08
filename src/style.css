@@ -187,11 +187,11 @@ html, body {
 #taskbar {
   background: var(--win);
   box-shadow: inset 1px 1px 0 var(--win-light), inset -1px -1px 0 var(--win-shadow);
-  padding: 3px 4px;
+  padding: 5px 6px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 36px;
+  gap: 6px;
+  height: 52px;
   flex-shrink: 0;
 }
 
@@ -200,13 +200,13 @@ html, body {
   color: var(--ink);
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
   border: none;
-  padding: 4px 10px;
+  padding: 10px 16px;
   font-family: var(--font);
-  font-size: 16px;
+  font-size: 22px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
 }
 
 .tb-btn.active {
@@ -219,7 +219,7 @@ html, body {
 }
 
 .tb-incoming {
-  font-size: 16px;
+  font-size: 22px;
   color: var(--pink-deep);
   animation: pulse 1s infinite;
 }
@@ -229,9 +229,9 @@ html, body {
   color: var(--ink);
   box-shadow: inset 1px 1px 0 var(--bevel-lo), inset -1px -1px 0 var(--bevel-hi);
   border: none;
-  padding: 4px 10px;
+  padding: 10px 16px;
   font-family: var(--font);
-  font-size: 16px;
+  font-size: 22px;
   cursor: pointer;
 }
 
@@ -301,7 +301,7 @@ html, body {
 .home-header {
   display: flex;
   justify-content: space-between;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .home-header-him {
@@ -314,13 +314,13 @@ html, body {
   align-items: center;
   justify-content: center;
   flex: 1;
-  gap: 4px;
+  gap: 6px;
 }
 
 .home-clock-meta {
-  font-size: 16px;
+  font-size: 20px;
   color: var(--ink-soft);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .home-status {
@@ -330,28 +330,28 @@ html, body {
 }
 
 .home-status-inner {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.2;
   text-align: left;
 }
 
 .home-status-label {
   color: var(--pink-deep);
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .home-status-text {
-  font-size: 16px;
-  margin-top: 2px;
+  font-size: 20px;
+  margin-top: 4px;
 }
 
 .home-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 16px;
+  font-size: 20px;
   color: var(--ink-soft);
   border-top: 1px dashed var(--dashed);
-  padding-top: 4px;
+  padding-top: 6px;
 }
 
 .home-right {
@@ -364,7 +364,7 @@ html, body {
 }
 
 .mail-header {
-  font-size: 16px;
+  font-size: 20px;
   display: flex;
   justify-content: space-between;
 }
@@ -379,18 +379,18 @@ html, body {
 
 .mail-preview {
   flex: 1;
-  padding: 6px;
-  font-size: 16px;
-  line-height: 1.3;
+  padding: 8px;
+  font-size: 20px;
+  line-height: 1.35;
   overflow: hidden;
 }
 
 .mail-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  font-size: 16px;
-  padding: 2px 0;
+  gap: 6px;
+  font-size: 20px;
+  padding: 4px 0;
   color: var(--ink-soft);
   border-bottom: 1px dotted var(--dot-border);
 }
@@ -405,13 +405,14 @@ html, body {
 .mail-row-time {
   flex-shrink: 0;
   color: var(--ink-soft);
+  white-space: nowrap;
 }
 
 .mail-row-dot {
   flex-shrink: 0;
-  width: 12px;
+  width: 14px;
   text-align: center;
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .mail-row-dot.unread {
@@ -424,9 +425,9 @@ html, body {
   border: none;
   cursor: pointer;
   font-family: var(--font);
-  font-size: 16px;
+  font-size: 20px;
   color: var(--ink);
-  padding: 4px 8px;
+  padding: 8px 14px;
   align-self: flex-start;
 }
 
@@ -470,7 +471,7 @@ html, body {
 
 .inbox-row {
   display: grid;
-  grid-template-columns: 60px 1fr 20px 40px;
+  grid-template-columns: 60px 1fr 20px 64px;
   gap: 6px;
   padding: 3px 0;
   border-bottom: 1px dotted var(--dot-border);
@@ -482,6 +483,8 @@ html, body {
 
 .inbox-time {
   color: var(--ink-soft);
+  white-space: nowrap;
+  text-align: right;
 }
 
 .inbox-text {
@@ -508,7 +511,7 @@ html, body {
 /* Draw */
 .draw-grid {
   display: grid;
-  grid-template-columns: 1fr 40px;
+  grid-template-columns: 1fr 64px;
   grid-template-rows: 1fr;
   gap: 6px;
   height: 100%;
@@ -534,8 +537,8 @@ html, body {
   right: 6px;
   background: var(--overlay-bg);
   border: 1px solid var(--overlay-border);
-  font-size: 10px;
-  padding: 2px 6px;
+  font-size: 14px;
+  padding: 8px 14px;
   cursor: pointer;
   font-family: monospace;
   color: var(--ink);
@@ -555,33 +558,33 @@ html, body {
 .draw-colors {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2px;
+  gap: 4px;
 }
 
 .draw-swatch {
-  height: 14px;
+  height: 36px;
   border: none;
   cursor: pointer;
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
 }
 
 .draw-swatch.active {
-  box-shadow: inset 0 0 0 2px var(--cream), inset 0 0 0 3px var(--ink);
+  box-shadow: inset 0 0 0 2px var(--cream), inset 0 0 0 4px var(--ink);
 }
 
 .draw-undo-wrap {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: 6px;
+  left: 6px;
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 
 .draw-undo-btn {
   background: var(--overlay-bg);
   border: 1px solid var(--overlay-border);
-  font-size: 10px;
-  padding: 2px 5px;
+  font-size: 14px;
+  padding: 8px 14px;
   cursor: pointer;
   font-family: monospace;
   color: var(--ink);
@@ -593,12 +596,12 @@ html, body {
 
 .draw-save {
   position: absolute;
-  bottom: 4px;
-  left: 4px;
+  bottom: 6px;
+  left: 6px;
   background: var(--overlay-bg);
   border: 1px solid var(--overlay-border);
-  font-size: 10px;
-  padding: 2px 5px;
+  font-size: 14px;
+  padding: 8px 14px;
   cursor: pointer;
   font-family: monospace;
   color: var(--ink);
@@ -610,8 +613,8 @@ html, body {
   border: none;
   cursor: pointer;
   font-family: var(--font);
-  font-size: 12px;
-  padding: 3px 2px;
+  font-size: 14px;
+  padding: 10px 4px;
   color: var(--ink-soft);
 }
 
