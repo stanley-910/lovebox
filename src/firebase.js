@@ -4,6 +4,7 @@ import {
   collection,
   addDoc,
   query,
+  where,
   orderBy,
   limit,
   onSnapshot,
@@ -92,8 +93,13 @@ export async function markRead(messageId) {
   await updateDoc(doc(db, 'messages', messageId), { read: true });
 }
 
-export function subscribeMood(callback) {
-  const q = query(moodRef, orderBy('timestamp', 'desc'), limit(1));
+export function subscribeMood(from, callback) {
+  const q = query(
+    moodRef,
+    where('from', '==', from),
+    orderBy('timestamp', 'desc'),
+    limit(1)
+  );
   return onSnapshot(q, (snapshot) => {
     snapshot.forEach((doc) => {
       callback({ id: doc.id, ...doc.data() });

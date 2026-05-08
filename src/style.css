@@ -916,6 +916,91 @@ html, body {
   padding: 2px 0;
 }
 
+/* Wi-Fi panel */
+.wifi-header {
+  display: flex;
+  gap: 6px;
+}
+.wifi-header .settings-btn {
+  flex: 1;
+  text-align: center;
+}
+.wifi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.wifi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--win);
+  box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 16px;
+  color: var(--ink);
+  padding: 6px 10px;
+  text-align: left;
+}
+.wifi-row:active {
+  box-shadow: inset 1px 1px 0 var(--bevel-lo), inset -1px -1px 0 var(--bevel-hi);
+}
+.wifi-row.in-use {
+  color: var(--green);
+}
+.wifi-bars {
+  color: var(--pink-deep);
+  letter-spacing: 1px;
+  min-width: 56px;
+}
+.wifi-ssid {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wifi-meta {
+  color: var(--ink-soft);
+  min-width: 28px;
+  text-align: right;
+}
+.wifi-feedback {
+  font-size: 14px;
+  color: var(--ink-soft);
+  padding: 2px 0;
+}
+.wifi-feedback.err {
+  color: var(--pink-deep);
+}
+.wifi-pw {
+  margin-top: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wifi-pw-field {
+  background: var(--cream);
+  padding: 8px 10px;
+  font-size: 18px;
+  letter-spacing: 4px;
+  min-height: 22px;
+  cursor: text;
+}
+.wifi-pw-actions {
+  display: flex;
+  gap: 6px;
+}
+.wifi-pw-actions .settings-btn {
+  flex: 1;
+  text-align: center;
+}
+
 /* Sleep overlay */
 #sleep-overlay {
   position: fixed;

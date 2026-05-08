@@ -1,5 +1,6 @@
 import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity, subscribePlayback } from './firebase.js';
 import { createKeyboard } from './keyboard.js';
+import { getWifiStatus, scanWifi, connectWifi } from './wifi.js';
 
 const MODULES = [
   { id: 'home',  label: 'home',  glyph: '⌂' },
@@ -59,6 +60,15 @@ const state = {
   sleeping: false,
   noteKbDismissed: false,
   partnerPlayback: null,
+  settingsView: 'main',
+  wifiStatus: null,
+  wifiNetworks: [],
+  wifiScanning: false,
+  wifiError: null,
+  wifiConnecting: null,
+  wifiPwSsid: null,
+  wifiPwInput: '',
+  wifiFeedback: null,
 };
 
 function partnerIdentity() {
@@ -700,6 +710,8 @@ function toggleTheme() {
 }
 
 function renderSettings() {
+  if (state.settingsView === 'wifi') return renderWifi();
+
   const wrap = el('div', { className: 'settings-wrap' });
 
   wrap.appendChild(el('div', { className: 'settings-section-label' }, 'DISPLAY'));
@@ -716,13 +728,204 @@ function renderSettings() {
   }, 'sleep display ◐'));
   wrap.appendChild(displaySection);
 
+  wrap.appendChild(el('div', { className: 'settings-section-label', style: { marginTop: '10px' } }, 'NETWORK'));
+  const netSection = el('div', { className: 'settings-section bevel-recessed' });
+  const netLabel = state.wifiStatus?.ssid
+    ? `wi-fi: ${state.wifiStatus.ssid} ${signalGlyph(state.wifiStatus.signal)}`
+    : 'wi-fi ▸';
+  netSection.appendChild(el('button', {
+    className: 'settings-btn',
+    onClick: () => openWifi(),
+  }, netLabel));
+  if (state.wifiStatus?.ip) {
+    netSection.appendChild(el('div', { className: 'settings-info' }, `▸ ip ${state.wifiStatus.ip}`));
+  }
+  wrap.appendChild(netSection);
+
   wrap.appendChild(el('div', { className: 'settings-section-label', style: { marginTop: '10px' } }, 'SYSTEM'));
   const sysSection = el('div', { className: 'settings-section bevel-recessed' });
   sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ SAKURA//OS v1.0'));
   sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ lovebox · for sam'));
   wrap.appendChild(sysSection);
 
+  // Refresh wi-fi status in background each time settings is opened
+  refreshWifiStatus();
+
   return renderWindow('SYSTEM.CFG', 'var(--ink-soft)', 'var(--ink-soft)', wrap);
+}
+
+// ── Wi-Fi ──
+function signalGlyph(sig) {
+  const bars = sig >= 75 ? 4 : sig >= 50 ? 3 : sig >= 25 ? 2 : sig > 0 ? 1 : 0;
+  return '▮'.repeat(bars) + '▯'.repeat(4 - bars);
+}
+
+async function refreshWifiStatus() {
+  try {
+    const s = await getWifiStatus();
+    state.wifiStatus = s;
+    if (state.active === 'settings') render();
+  } catch {
+    // server not reachable (dev on Mac) — leave status null
+  }
+}
+
+function openWifi() {
+  state.settingsView = 'wifi';
+  state.wifiError = null;
+  state.wifiFeedback = null;
+  state.wifiPwSsid = null;
+  state.wifiPwInput = '';
+  render();
+  doWifiScan();
+}
+
+function backToSettings() {
+  state.settingsView = 'main';
+  state.wifiPwSsid = null;
+  state.wifiPwInput = '';
+  state.wifiFeedback = null;
+  if (keyboard) keyboard.close();
+  render();
+}
+
+async function doWifiScan() {
+  if (state.wifiScanning) return;
+  state.wifiScanning = true;
+  state.wifiError = null;
+  render();
+  try {
+    const r = await scanWifi();
+    state.wifiNetworks = r.networks || [];
+    state.wifiError = r.error || null;
+  } catch (e) {
+    state.wifiError = 'wi-fi unavailable on this host';
+    state.wifiNetworks = [];
+  } finally {
+    state.wifiScanning = false;
+    render();
+  }
+}
+
+function bindWifiPwKeyboard() {
+  const kb = ensureKeyboard();
+  kb.setLabel('PASSWORD');
+  kb.setHandlers({
+    onKey: (ch) => { state.wifiPwInput += ch; renderWifiPwField(); },
+    onBackspace: () => { state.wifiPwInput = state.wifiPwInput.slice(0, -1); renderWifiPwField(); },
+    onEnter: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
+    onClose: () => { /* keep panel; user can reopen with Enter */ },
+    onSubmit: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
+  });
+}
+
+function renderWifiPwField() {
+  const f = document.getElementById('wifi-pw-field');
+  if (f) f.textContent = '•'.repeat(state.wifiPwInput.length) || ' ';
+}
+
+async function doConnect(ssid, password) {
+  state.wifiConnecting = ssid;
+  state.wifiFeedback = `connecting to ${ssid}…`;
+  render();
+  try {
+    const r = await connectWifi(ssid, password || '');
+    if (r.ok) {
+      state.wifiFeedback = `✓ connected to ${ssid}`;
+      state.wifiPwSsid = null;
+      state.wifiPwInput = '';
+      if (keyboard) keyboard.close();
+      refreshWifiStatus();
+      doWifiScan();
+    } else {
+      state.wifiFeedback = `✗ ${r.error || 'connection failed'}`;
+    }
+  } catch {
+    state.wifiFeedback = '✗ connection failed';
+  } finally {
+    state.wifiConnecting = null;
+    render();
+  }
+}
+
+function renderWifi() {
+  const wrap = el('div', { className: 'settings-wrap' });
+
+  const header = el('div', { className: 'wifi-header' },
+    el('button', { className: 'settings-btn wifi-back', onClick: backToSettings }, '◂ back'),
+    el('button', {
+      className: 'settings-btn wifi-rescan',
+      onClick: doWifiScan,
+    }, state.wifiScanning ? 'scanning…' : 'rescan ↻'),
+  );
+  wrap.appendChild(header);
+
+  if (state.wifiStatus?.ssid) {
+    wrap.appendChild(el('div', { className: 'settings-info' },
+      `▸ on ${state.wifiStatus.ssid}${state.wifiStatus.ip ? ' · ' + state.wifiStatus.ip : ''}`));
+  }
+
+  if (state.wifiError) {
+    wrap.appendChild(el('div', { className: 'wifi-feedback err' }, state.wifiError));
+  }
+  if (state.wifiFeedback) {
+    wrap.appendChild(el('div', { className: 'wifi-feedback' }, state.wifiFeedback));
+  }
+
+  const list = el('div', { className: 'wifi-list bevel-recessed' });
+  if (!state.wifiNetworks.length && !state.wifiScanning && !state.wifiError) {
+    list.appendChild(el('div', { className: 'settings-info' }, '▸ no networks'));
+  }
+  for (const n of state.wifiNetworks) {
+    const secured = !!(n.security && n.security !== '' && n.security !== '--');
+    const row = el('button', {
+      className: `wifi-row ${n.in_use ? 'in-use' : ''}`,
+      onClick: () => {
+        if (n.in_use) return;
+        if (secured) {
+          state.wifiPwSsid = n.ssid;
+          state.wifiPwInput = '';
+          state.wifiFeedback = null;
+          render();
+          setTimeout(() => { bindWifiPwKeyboard(); ensureKeyboard().open(); }, 0);
+        } else {
+          doConnect(n.ssid, '');
+        }
+      },
+    },
+      el('span', { className: 'wifi-bars' }, signalGlyph(n.signal)),
+      el('span', { className: 'wifi-ssid' }, n.ssid),
+      el('span', { className: 'wifi-meta' }, (secured ? '⚿ ' : '') + (n.in_use ? '✓' : '')),
+    );
+    list.appendChild(row);
+  }
+  wrap.appendChild(list);
+
+  if (state.wifiPwSsid) {
+    const pwBox = el('div', { className: 'wifi-pw bevel-recessed' });
+    pwBox.appendChild(el('div', { className: 'settings-section-label' }, `password · ${state.wifiPwSsid}`));
+    pwBox.appendChild(el('div', {
+      id: 'wifi-pw-field',
+      className: 'wifi-pw-field bevel-recessed',
+      onClick: () => { bindWifiPwKeyboard(); ensureKeyboard().open(); },
+    }, '•'.repeat(state.wifiPwInput.length) || ' '));
+    const actions = el('div', { className: 'wifi-pw-actions' },
+      el('button', {
+        className: 'settings-btn',
+        onClick: () => { state.wifiPwSsid = null; state.wifiPwInput = ''; if (keyboard) keyboard.close(); render(); },
+      }, 'cancel'),
+      el('button', {
+        className: 'settings-btn',
+        onClick: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
+      }, state.wifiConnecting ? 'connecting…' : 'connect ▸'),
+    );
+    pwBox.appendChild(actions);
+    wrap.appendChild(pwBox);
+
+    setTimeout(() => { bindWifiPwKeyboard(); ensureKeyboard().open(); }, 0);
+  }
+
+  return renderWindow('WIFI.CFG', 'var(--ink-soft)', 'var(--ink-soft)', wrap);
 }
 
 // ── Sleep mode ──
@@ -827,6 +1030,12 @@ function switchModule(id) {
   }
   if (state.active === 'inbox' && id !== 'inbox') state.searchQuery = '';
   if (state.active === 'note' && id !== 'note') state.noteKbDismissed = false;
+  if (state.active === 'settings' && id !== 'settings') {
+    state.settingsView = 'main';
+    state.wifiPwSsid = null;
+    state.wifiPwInput = '';
+    state.wifiFeedback = null;
+  }
   state.active = id;
   if (id === 'inbox') {
     dismissToast();
@@ -874,11 +1083,9 @@ function boot() {
     }
   });
 
-  subscribeMood((moodDoc) => {
-    if (moodDoc.from === partnerIdentity()) {
-      state.mood = moodDoc.mood;
-      if (state.active === 'home') render();
-    }
+  subscribeMood(partnerIdentity(), (moodDoc) => {
+    state.mood = moodDoc.mood;
+    if (state.active === 'home') render();
   });
 
   subscribeCanvas((strokes) => {
