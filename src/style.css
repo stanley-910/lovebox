@@ -75,6 +75,7 @@ html, body {
   color: var(--ink);
   -webkit-user-select: none;
   user-select: none;
+  touch-action: manipulation;
   cursor: default;
 }
 

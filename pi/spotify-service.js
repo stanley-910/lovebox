@@ -36,10 +36,7 @@ const db = admin.firestore();
 
 function loadTokenFile(identity) {
   const p = path.join(require('os').homedir(), `.lovebox-spotify-${identity}.json`);
-  if (!fs.existsSync(p)) {
-    console.error(`Token file missing: ${p} — run spotify-auth.js first.`);
-    process.exit(1);
-  }
+  if (!fs.existsSync(p)) return null;
   return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
@@ -52,6 +49,14 @@ const tokens = {
   him: loadTokenFile('him'),
   her: loadTokenFile('her'),
 };
+
+if (!tokens.him && !tokens.her) {
+  console.error('No token files found. Run spotify-auth.js first.');
+  process.exit(1);
+}
+for (const id of ['him', 'her']) {
+  if (!tokens[id]) console.log(`[${id}] no token file — skipping`);
+}
 
 function httpsRequest(method, url, headers, body) {
   return new Promise((resolve, reject) => {
@@ -77,6 +82,7 @@ function httpsRequest(method, url, headers, body) {
 
 async function refreshToken(identity) {
   const t = tokens[identity];
+  if (!t) return null;
   if (Date.now() < t.expires_at - 60_000) return t.access_token;
 
   const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
@@ -138,6 +144,7 @@ function extractTrack(item) {
 }
 
 async function pollPlayback(identity) {
+  if (!tokens[identity]) return;
   try {
     const [playing, queue, recent] = await Promise.all([
       spotifyGet(identity, '/me/player/currently-playing'),
