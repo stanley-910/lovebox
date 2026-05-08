@@ -177,6 +177,22 @@
 
       <hr class="divider">
 
+      <div class="draw-section">
+        <div class="label">JUKEBOX.CTRL</div>
+        <div style="font-size:13px;color:#a83a52;margin-bottom:2px;">YOUR SPOTIFY</div>
+        <div id="myPlayback" style="font-size:15px;color:#5a5040;margin-bottom:6px;">loading...</div>
+        <div style="font-size:13px;color:#5a78a8;margin-bottom:2px;">SAM'S SPOTIFY</div>
+        <div id="herPlayback" style="font-size:15px;color:#5a5040;margin-bottom:6px;">loading...</div>
+        <input class="login-input" id="spotifyUri" type="text" placeholder="spotify link or URI" style="height:auto;padding:6px 8px;font-size:16px;">
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button class="btn" id="queueBtn" style="font-size:16px;padding:6px;">queue it ▸</button>
+          <button class="btn" id="playBtn" style="font-size:16px;padding:6px;background:#4a7a4a;">play now ▸</button>
+        </div>
+        <div class="status" id="spotifyStatus"></div>
+      </div>
+
+      <hr class="divider">
+
       <div class="label">RECENT</div>
       <div id="recent"></div>
     </div>
@@ -451,6 +467,51 @@
       };
       toolbar.appendChild(btn);
     });
+
+    // ── Spotify hijack + playback display ──
+
+    function parseSpotifyUri(input) {
+      input = input.trim();
+      if (input.startsWith('spotify:')) return input;
+      const m = input.match(/open\.spotify\.com\/(track|episode)\/([a-zA-Z0-9]+)/);
+      if (m) return `spotify:${m[1]}:${m[2]}`;
+      return null;
+    }
+
+    async function sendSpotifyCmd(action) {
+      const raw = document.getElementById('spotifyUri').value;
+      const uri = parseSpotifyUri(raw);
+      if (!uri) {
+        document.getElementById('spotifyStatus').textContent = 'invalid link';
+        return;
+      }
+      await addDoc(collection(db, 'spotify-commands'), {
+        action,
+        uri,
+        target: 'her',
+        executed: false,
+        timestamp: serverTimestamp(),
+      });
+      document.getElementById('spotifyUri').value = '';
+      document.getElementById('spotifyStatus').textContent = action === 'queue' ? 'queued' : 'playing';
+      setTimeout(() => document.getElementById('spotifyStatus').textContent = '', 2000);
+    }
+
+    document.getElementById('queueBtn').onclick = () => sendSpotifyCmd('queue');
+    document.getElementById('playBtn').onclick = () => sendSpotifyCmd('play');
+
+    function bindPlayback(docId, elId, emptyMsg) {
+      onSnapshot(doc(db, 'playback', docId), (snap) => {
+        const el = document.getElementById(elId);
+        if (!snap.exists()) { el.textContent = 'not connected yet'; return; }
+        const d = snap.data();
+        if (!d.nowPlaying) { el.textContent = emptyMsg; return; }
+        const t = d.nowPlaying;
+        el.textContent = `${d.isPlaying ? '▸' : '❚❚'} ${t.name} — ${t.artist}`;
+      });
+    }
+    bindPlayback('him', 'myPlayback', 'you aren\'t playing anything');
+    bindPlayback('her', 'herPlayback', 'sam isn\'t playing anything');
 
     } // end initApp
   </script>

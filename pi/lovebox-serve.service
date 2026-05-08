@@ -1,0 +1,14 @@
+[Unit]
+Description=Lovebox Static File Server
+After=network.target
+
+[Service]
+Type=simple
+User=stanley
+Environment=PATH=/home/stanley/.nvm/versions/node/v20.20.2/bin:/usr/bin:/bin
+ExecStart=/home/stanley/.nvm/versions/node/v20.20.2/bin/serve /home/stanley/lovebox/dist -l 3000 -s
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -19,7 +19,7 @@ const path = require('path');
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const PORT = 8888;
-const REDIRECT_URI = `http://localhost:${PORT}/callback`;
+const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;
 const SCOPES = [
   'user-read-currently-playing',
   'user-read-playback-state',
@@ -112,6 +112,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Open http://localhost:${PORT}/login in your browser.`);
+  console.log(`Open http://127.0.0.1:${PORT}/login in your browser.`);
   console.log(`Authorizing as: ${process.argv[2] || 'unknown'} (pass "him" or "her" as argument)`);
 });

@@ -1,4 +1,4 @@
-import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity } from './firebase.js';
+import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity, subscribePlayback } from './firebase.js';
 import { createKeyboard } from './keyboard.js';
 
 const MODULES = [
@@ -57,6 +57,8 @@ const state = {
   searchQuery: '',
   lastMessageCount: 0,
   sleeping: false,
+  noteKbDismissed: false,
+  partnerPlayback: null,
 };
 
 function partnerIdentity() {
@@ -526,7 +528,7 @@ function renderNote() {
       onKey: (ch) => { state.noteText += ch; refreshDisplay(); },
       onBackspace: () => { state.noteText = state.noteText.slice(0, -1); refreshDisplay(); },
       onEnter: () => { state.noteText += '\n'; refreshDisplay(); },
-      onClose: () => { renderShowKeysButton(); },
+      onClose: () => { state.noteKbDismissed = true; renderShowKeysButton(); },
       onSubmit: () => send(),
     });
   }
@@ -544,7 +546,7 @@ function renderNote() {
     if (!kb.isOpen()) {
       rightGroup.appendChild(el('button', {
         className: 'note-show-keys',
-        onClick: () => { bindNoteKeyboard(); ensureKeyboard().open(); renderShowKeysButton(); },
+        onClick: () => { state.noteKbDismissed = false; bindNoteKeyboard(); ensureKeyboard().open(); renderShowKeysButton(); },
       }, 'show keys ▴'));
     }
     rightGroup.appendChild(sendBtn);
@@ -553,8 +555,13 @@ function renderNote() {
   footer.appendChild(rightGroup);
   wrap.appendChild(footer);
 
-  // Auto-open keyboard when note module mounts.
-  setTimeout(() => { bindNoteKeyboard(); ensureKeyboard().open(); renderShowKeysButton(); }, 0);
+  // Auto-open keyboard when note module mounts, but not on subsequent
+  // re-renders if the user has explicitly dismissed it.
+  setTimeout(() => {
+    bindNoteKeyboard();
+    if (!state.noteKbDismissed) ensureKeyboard().open();
+    renderShowKeysButton();
+  }, 0);
 
   return renderWindow('NOTE.TXT', 'var(--blue)', 'var(--blue)', wrap);
 }
@@ -578,29 +585,79 @@ function renderMood() {
   return renderWindow('MOOD.CFG', 'var(--pink-deep)', 'var(--pink-deep)', grid);
 }
 
+function fmtDuration(ms) {
+  if (!ms) return '0:00';
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 function renderMusic() {
+  const pb = state.partnerPlayback;
   const wrap = el('div', { className: 'music-wrap' });
-  wrap.appendChild(el('div', { className: 'music-header' }, 'NOW PLAYING ▸ shared queue'));
+
+  const partnerLabel = state.identity === 'her' ? 'stanley' : 'sam';
+  wrap.appendChild(el('div', { className: 'music-header' },
+    `NOW PLAYING ▸ ${partnerLabel}'s spotify`));
 
   const body = el('div', { className: 'music-body bevel-recessed' });
+
+  if (!pb || !pb.nowPlaying) {
+    body.appendChild(el('div', { className: 'music-empty' },
+      `${partnerLabel} isn't playing anything`));
+    wrap.appendChild(body);
+    return renderWindow('JUKEBOX.WAV', 'var(--green)', 'var(--green)', wrap);
+  }
+
+  const track = pb.nowPlaying;
+  const coverEl = track.albumArt
+    ? el('img', { className: 'music-cover-img', src: track.albumArt })
+    : el('div', { className: 'music-cover' }, '♪');
+
   body.appendChild(el('div', { className: 'music-track' },
-    el('div', { className: 'music-cover' }, '♪'),
-    el('div', {},
-      el('div', {}, 'tape #14'),
-      el('div', { className: 'music-meta-sub' }, 'track 03 · "petal radio"'),
+    coverEl,
+    el('div', { className: 'music-track-info' },
+      el('div', { className: 'music-track-name' }, track.name),
+      el('div', { className: 'music-meta-sub' }, track.artist),
     ),
   ));
 
-  const wave = el('div', { className: 'music-wave' });
-  for (let i = 0; i < 60; i++) {
-    const h = 20 + Math.sin(i * 0.6) * 14 + Math.cos(i * 0.3) * 8;
-    wave.appendChild(el('div', { className: 'music-wave-bar', style: { height: `${h}%` } }));
-  }
-  body.appendChild(wave);
+  const progress = pb.progressMs || 0;
+  const duration = track.durationMs || 1;
+  const pct = Math.min((progress / duration) * 100, 100);
+  const progressBar = el('div', { className: 'music-progress' },
+    el('div', { className: 'music-progress-fill', style: { width: pct + '%' } }),
+  );
+  const times = el('div', { className: 'music-times' },
+    el('span', {}, fmtDuration(progress)),
+    el('span', {}, pb.isPlaying ? '▸ playing' : '❚❚ paused'),
+    el('span', {}, fmtDuration(duration)),
+  );
+  body.appendChild(progressBar);
+  body.appendChild(times);
 
-  const tracklist = el('div', { className: 'music-tracklist' });
-  tracklist.innerHTML = '▸ tape #14 — for slow mornings<br>· 03 petal radio (1:24/3:48)<br>· 04 cherry static<br>· 05 longwave';
-  body.appendChild(tracklist);
+  if (pb.queue && pb.queue.length > 0) {
+    const queueEl = el('div', { className: 'music-tracklist' });
+    queueEl.appendChild(el('div', { className: 'music-section-label' }, 'QUEUE'));
+    for (const t of pb.queue) {
+      queueEl.appendChild(el('div', { className: 'music-tracklist-row' },
+        `· ${t.name} — ${t.artist}`));
+    }
+    body.appendChild(queueEl);
+  }
+
+  if (pb.recent && pb.recent.length > 0) {
+    const recentEl = el('div', { className: 'music-tracklist' });
+    recentEl.appendChild(el('div', { className: 'music-section-label' }, 'RECENT'));
+    for (const t of pb.recent) {
+      const ago = t.playedAt ? fmtMsgTime({ toDate: () => new Date(t.playedAt) }) : '';
+      recentEl.appendChild(el('div', { className: 'music-tracklist-row' },
+        el('span', {}, `· ${t.name} — ${t.artist} `),
+        el('span', { className: 'music-recent-time' }, ago),
+      ));
+    }
+    body.appendChild(recentEl);
+  }
 
   wrap.appendChild(body);
   return renderWindow('JUKEBOX.WAV', 'var(--green)', 'var(--green)', wrap);
@@ -749,6 +806,7 @@ function switchModule(id) {
     keyboard.close();
   }
   if (state.active === 'inbox' && id !== 'inbox') state.searchQuery = '';
+  if (state.active === 'note' && id !== 'note') state.noteKbDismissed = false;
   state.active = id;
   if (id === 'inbox') {
     dismissToast();
@@ -813,6 +871,11 @@ function boot() {
     if (state.active === 'draw' && state.drawView === 'gallery') {
       render();
     }
+  });
+
+  subscribePlayback(partnerIdentity(), (data) => {
+    state.partnerPlayback = data;
+    if (state.active === 'play') render();
   });
 
   render();

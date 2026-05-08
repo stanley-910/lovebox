@@ -164,3 +164,21 @@ export async function saveSnapshot(dataUrl, from) {
 export async function deleteSnapshot(snapshotId) {
   await deleteDoc(doc(db, 'canvas_snapshots', snapshotId));
 }
+
+// ── Spotify playback ──
+
+export function subscribePlayback(identity, callback) {
+  return onSnapshot(doc(db, 'playback', identity), (snap) => {
+    callback(snap.exists() ? snap.data() : null);
+  });
+}
+
+export async function sendSpotifyCommand(action, uri, target) {
+  await addDoc(collection(db, 'spotify-commands'), {
+    action,
+    uri,
+    target,
+    executed: false,
+    timestamp: serverTimestamp(),
+  });
+}
