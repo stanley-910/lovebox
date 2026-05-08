@@ -1,6 +1,6 @@
 import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity, subscribePlayback, subscribeGeo } from './firebase.js';
 import { createKeyboard } from './keyboard.js';
-import { getWifiStatus, scanWifi, connectWifi } from './wifi.js';
+import { getWifiStatus, scanWifi, connectWifi, disconnectWifi, getWifiProfile, setWifiAutoconnect } from './wifi.js';
 
 const MODULES = [
   { id: 'home',  label: 'home',  glyph: '⌂' },
@@ -70,6 +70,9 @@ const state = {
   wifiPwInput: '',
   wifiPwKbDismissed: false,
   wifiFeedback: null,
+  wifiDetailsSsid: null,
+  wifiProfile: null,
+  wifiBusy: false,
   geo: { him: null, her: { lat: 40.7128, lon: -74.006, label: 'new york' } },
   weather: { him: null, her: null },
 };
@@ -825,6 +828,8 @@ function openWifi() {
   state.wifiPwSsid = null;
   state.wifiPwInput = '';
   state.wifiPwKbDismissed = false;
+  state.wifiDetailsSsid = null;
+  state.wifiProfile = null;
   render();
   doWifiScan();
 }
@@ -835,8 +840,76 @@ function backToSettings() {
   state.wifiPwInput = '';
   state.wifiPwKbDismissed = false;
   state.wifiFeedback = null;
+  state.wifiDetailsSsid = null;
+  state.wifiProfile = null;
   if (keyboard) keyboard.close();
   render();
+}
+
+async function openWifiDetails(ssid) {
+  state.wifiDetailsSsid = ssid;
+  state.wifiProfile = null;
+  state.wifiFeedback = null;
+  render();
+  try {
+    state.wifiProfile = await getWifiProfile(ssid);
+  } catch {
+    state.wifiProfile = { exists: false, ssid };
+  }
+  render();
+}
+
+function closeWifiDetails() {
+  state.wifiDetailsSsid = null;
+  state.wifiProfile = null;
+  render();
+}
+
+async function toggleAutoconnect() {
+  if (!state.wifiProfile?.exists || state.wifiBusy) return;
+  const next = !state.wifiProfile.autoconnect;
+  state.wifiBusy = true;
+  state.wifiFeedback = `setting autoconnect ${next ? 'on' : 'off'}…`;
+  render();
+  try {
+    const r = await setWifiAutoconnect(state.wifiDetailsSsid, next);
+    if (r.ok) {
+      state.wifiProfile = { ...state.wifiProfile, autoconnect: next };
+      state.wifiFeedback = `✓ autoconnect ${next ? 'on' : 'off'}`;
+    } else {
+      state.wifiFeedback = `✗ ${r.error || 'modify failed'}`;
+    }
+  } catch {
+    state.wifiFeedback = '✗ modify failed';
+  } finally {
+    state.wifiBusy = false;
+    render();
+  }
+}
+
+async function doDisconnect() {
+  if (!state.wifiDetailsSsid || state.wifiBusy) return;
+  const ssid = state.wifiDetailsSsid;
+  state.wifiBusy = true;
+  state.wifiFeedback = `disconnecting ${ssid}…`;
+  render();
+  try {
+    const r = await disconnectWifi(ssid);
+    if (r.ok) {
+      state.wifiFeedback = `✓ disconnected from ${ssid}`;
+      state.wifiDetailsSsid = null;
+      state.wifiProfile = null;
+      refreshWifiStatus();
+      doWifiScan();
+    } else {
+      state.wifiFeedback = `✗ ${r.error || 'disconnect failed'}`;
+    }
+  } catch {
+    state.wifiFeedback = '✗ disconnect failed';
+  } finally {
+    state.wifiBusy = false;
+    render();
+  }
 }
 
 async function doWifiScan() {
@@ -929,9 +1002,9 @@ function renderWifi() {
     wrap.appendChild(el('div', { className: 'wifi-feedback' }, state.wifiFeedback));
   }
 
-  // Hide the network list while entering a password — keeps the pw field
-  // visible above the on-screen keyboard.
-  if (!state.wifiPwSsid) {
+  // Hide the network list while entering a password or showing details —
+  // keeps the relevant panel visible above the on-screen keyboard.
+  if (!state.wifiPwSsid && !state.wifiDetailsSsid) {
     const list = el('div', { className: 'wifi-list bevel-recessed' });
     if (!state.wifiNetworks.length && !state.wifiScanning && !state.wifiError) {
       list.appendChild(el('div', { className: 'settings-info' }, '▸ no networks'));
@@ -941,8 +1014,9 @@ function renderWifi() {
       const row = el('button', {
         className: `wifi-row ${n.in_use ? 'in-use' : ''}`,
         onClick: () => {
-          if (n.in_use) return;
-          if (secured) {
+          if (n.in_use) {
+            openWifiDetails(n.ssid);
+          } else if (secured) {
             state.wifiPwSsid = n.ssid;
             state.wifiPwInput = '';
             state.wifiPwKbDismissed = false;
@@ -961,6 +1035,40 @@ function renderWifi() {
       list.appendChild(row);
     }
     wrap.appendChild(list);
+  }
+
+  if (state.wifiDetailsSsid) {
+    const ssid = state.wifiDetailsSsid;
+    const detail = el('div', { className: 'wifi-pw bevel-recessed' });
+    detail.appendChild(el('div', { className: 'settings-section-label' }, ssid));
+
+    const ip = state.wifiStatus?.ssid === ssid ? state.wifiStatus.ip : null;
+    if (ip) detail.appendChild(el('div', { className: 'settings-info' }, `▸ ip ${ip}`));
+
+    if (!state.wifiProfile) {
+      detail.appendChild(el('div', { className: 'settings-info' }, '▸ loading…'));
+    } else if (!state.wifiProfile.exists) {
+      detail.appendChild(el('div', { className: 'settings-info' }, '▸ no saved profile'));
+    } else {
+      const ac = state.wifiProfile.autoconnect;
+      detail.appendChild(el('button', {
+        className: 'settings-btn wifi-toggle',
+        onClick: toggleAutoconnect,
+      }, `[${ac ? '✓' : ' '}] autoconnect`));
+    }
+
+    const actions = el('div', { className: 'wifi-pw-actions' },
+      el('button', {
+        className: 'settings-btn',
+        onClick: closeWifiDetails,
+      }, '◂ back'),
+      el('button', {
+        className: 'settings-btn',
+        onClick: doDisconnect,
+      }, state.wifiBusy ? '…' : 'disconnect'),
+    );
+    detail.appendChild(actions);
+    wrap.appendChild(detail);
   }
 
   if (state.wifiPwSsid) {

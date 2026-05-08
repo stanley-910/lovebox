@@ -160,6 +160,57 @@ def wifi_connect(ssid, password):
     return {"ok": False, "error": msg}
 
 
+def _last_err(out, err, fallback):
+    s = (err or out).strip()
+    return s.splitlines()[-1] if s else fallback
+
+
+def wifi_disconnect(ssid):
+    if not ssid:
+        return {"ok": False, "error": "missing ssid"}
+    rc, out, err = _nmcli(["connection", "down", ssid], timeout=15)
+    if rc == 0:
+        return {"ok": True}
+    return {"ok": False, "error": _last_err(out, err, "disconnect failed")}
+
+
+def wifi_profile(ssid):
+    if not ssid:
+        return {"exists": False}
+    rc, out, _ = _nmcli(["-t", "-f", "connection.autoconnect", "connection", "show", ssid])
+    if rc != 0:
+        return {"exists": False, "ssid": ssid}
+    autoconnect = False
+    for line in out.splitlines():
+        parts = _parse_terse(line)
+        if len(parts) >= 2 and parts[0] == "connection.autoconnect":
+            autoconnect = parts[1].lower() == "yes"
+            break
+    return {"exists": True, "ssid": ssid, "autoconnect": autoconnect}
+
+
+def wifi_set_autoconnect(ssid, enabled):
+    if not ssid:
+        return {"ok": False, "error": "missing ssid"}
+    val = "yes" if enabled else "no"
+    rc, out, err = _nmcli(["connection", "modify", ssid, "connection.autoconnect", val])
+    if rc == 0:
+        return {"ok": True, "autoconnect": enabled}
+    return {"ok": False, "error": _last_err(out, err, "modify failed")}
+
+
+def _parse_query(path, key):
+    if "?" not in path:
+        return None
+    from urllib.parse import unquote
+    qs = path.split("?", 1)[1]
+    for pair in qs.split("&"):
+        k, _, v = pair.partition("=")
+        if k == key:
+            return unquote(v)
+    return None
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/sleep":
@@ -171,6 +222,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/wifi/connect":
             body = self._read_json()
             self._json(wifi_connect((body or {}).get("ssid"), (body or {}).get("password", "")))
+        elif self.path == "/wifi/disconnect":
+            body = self._read_json()
+            self._json(wifi_disconnect((body or {}).get("ssid")))
+        elif self.path == "/wifi/autoconnect":
+            body = self._read_json()
+            self._json(wifi_set_autoconnect((body or {}).get("ssid"), bool((body or {}).get("enabled"))))
         else:
             self.send_error(404)
 
@@ -181,6 +238,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._json(wifi_status())
         elif self.path == "/wifi/scan":
             self._json(wifi_scan())
+        elif self.path.startswith("/wifi/profile"):
+            self._json(wifi_profile(_parse_query(self.path, "ssid")))
         else:
             self.send_error(404)
 

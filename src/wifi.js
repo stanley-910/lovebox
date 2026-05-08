@@ -12,3 +12,9 @@ export const getWifiStatus = () => call('/wifi/status');
 export const scanWifi = () => call('/wifi/scan');
 export const connectWifi = (ssid, password) =>
   call('/wifi/connect', { method: 'POST', body: JSON.stringify({ ssid, password }) });
+export const disconnectWifi = (ssid) =>
+  call('/wifi/disconnect', { method: 'POST', body: JSON.stringify({ ssid }) });
+export const getWifiProfile = (ssid) =>
+  call(`/wifi/profile?ssid=${encodeURIComponent(ssid)}`);
+export const setWifiAutoconnect = (ssid, enabled) =>
+  call('/wifi/autoconnect', { method: 'POST', body: JSON.stringify({ ssid, enabled }) });
