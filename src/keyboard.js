@@ -354,6 +354,12 @@ export function createKeyboard(opts = {}) {
     isOpen = false;
     document.body.classList.remove('kb-up');
     root.style.display = 'none';
+    // Swallow the ghost click: when 'hide' fires on pointerdown and the
+    // keyboard disappears, the finger-lift generates a click on whatever's
+    // now under that touch point (e.g. the note text field), which would
+    // re-open the keyboard. Block all pointer events for ~350ms.
+    document.body.classList.add('kb-just-closed');
+    setTimeout(() => document.body.classList.remove('kb-just-closed'), 350);
   }
 
   function setLabel(s) {

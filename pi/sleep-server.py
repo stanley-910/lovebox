@@ -143,12 +143,19 @@ def wifi_scan():
 def wifi_connect(ssid, password):
     if not ssid:
         return {"ok": False, "error": "missing ssid"}
+
+    # Drop any stale profile with this SSID — common cause of "key mgmt" errors
+    # is an existing connection with mismatched security settings. Ignore errors
+    # (no such connection is fine).
+    _nmcli(["connection", "delete", ssid], timeout=10)
+
     args = ["device", "wifi", "connect", ssid]
     if password:
         args += ["password", password]
     rc, out, err = _nmcli(args, timeout=45)
     if rc == 0:
         return {"ok": True}
+
     msg = (err or out).strip().splitlines()[-1] if (err or out).strip() else "connection failed"
     return {"ok": False, "error": msg}
 

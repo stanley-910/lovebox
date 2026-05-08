@@ -258,6 +258,13 @@ body.kb-up #taskbar {
   display: none;
 }
 
+/* Briefly swallow ghost clicks after the keyboard's 'hide' button fires on
+   pointerdown — without this, touchend lands on whatever is under the finger
+   (e.g. the text field) and immediately re-opens the keyboard. */
+body.kb-just-closed #desktop {
+  pointer-events: none;
+}
+
 .tb-btn {
   background: var(--win);
   color: var(--ink);
