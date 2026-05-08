@@ -161,7 +161,7 @@ sudo systemctl restart lovebox-spotify
 
 ## Deploy / pull latest code
 
-`update.sh` runs every 30 min via cron. To force it now:
+`update.sh` runs every 5 min via cron. To force it now:
 
 ```bash
 cd ~/lovebox && ./pi/update.sh
