@@ -617,13 +617,9 @@ function renderNote() {
   footer.appendChild(rightGroup);
   wrap.appendChild(footer);
 
-  // Auto-open keyboard when note module mounts, but not on subsequent
-  // re-renders if the user has explicitly dismissed it.
-  setTimeout(() => {
-    bindNoteKeyboard();
-    if (!state.noteKbDismissed) ensureKeyboard().open();
-    renderShowKeysButton();
-  }, 0);
+  // Bind keyboard handlers up front so a tap on the field opens it instantly.
+  // Don't auto-open — wait for the user to tap the field or "show keys".
+  bindNoteKeyboard();
 
   return renderWindow('NOTE.TXT', 'var(--blue)', 'var(--blue)', wrap);
 }
@@ -933,35 +929,39 @@ function renderWifi() {
     wrap.appendChild(el('div', { className: 'wifi-feedback' }, state.wifiFeedback));
   }
 
-  const list = el('div', { className: 'wifi-list bevel-recessed' });
-  if (!state.wifiNetworks.length && !state.wifiScanning && !state.wifiError) {
-    list.appendChild(el('div', { className: 'settings-info' }, '▸ no networks'));
-  }
-  for (const n of state.wifiNetworks) {
-    const secured = !!(n.security && n.security !== '' && n.security !== '--');
-    const row = el('button', {
-      className: `wifi-row ${n.in_use ? 'in-use' : ''}`,
-      onClick: () => {
-        if (n.in_use) return;
-        if (secured) {
-          state.wifiPwSsid = n.ssid;
-          state.wifiPwInput = '';
-          state.wifiPwKbDismissed = false;
-          state.wifiFeedback = null;
-          render();
-          setTimeout(openWifiKb, 0);
-        } else {
-          doConnect(n.ssid, '');
-        }
+  // Hide the network list while entering a password — keeps the pw field
+  // visible above the on-screen keyboard.
+  if (!state.wifiPwSsid) {
+    const list = el('div', { className: 'wifi-list bevel-recessed' });
+    if (!state.wifiNetworks.length && !state.wifiScanning && !state.wifiError) {
+      list.appendChild(el('div', { className: 'settings-info' }, '▸ no networks'));
+    }
+    for (const n of state.wifiNetworks) {
+      const secured = !!(n.security && n.security !== '' && n.security !== '--');
+      const row = el('button', {
+        className: `wifi-row ${n.in_use ? 'in-use' : ''}`,
+        onClick: () => {
+          if (n.in_use) return;
+          if (secured) {
+            state.wifiPwSsid = n.ssid;
+            state.wifiPwInput = '';
+            state.wifiPwKbDismissed = false;
+            state.wifiFeedback = null;
+            render();
+            setTimeout(openWifiKb, 0);
+          } else {
+            doConnect(n.ssid, '');
+          }
+        },
       },
-    },
-      el('span', { className: 'wifi-bars' }, signalGlyph(n.signal)),
-      el('span', { className: 'wifi-ssid' }, n.ssid),
-      el('span', { className: 'wifi-meta' }, (secured ? '⚿ ' : '') + (n.in_use ? '✓' : '')),
-    );
-    list.appendChild(row);
+        el('span', { className: 'wifi-bars' }, signalGlyph(n.signal)),
+        el('span', { className: 'wifi-ssid' }, n.ssid),
+        el('span', { className: 'wifi-meta' }, (secured ? '⚿ ' : '') + (n.in_use ? '✓' : '')),
+      );
+      list.appendChild(row);
+    }
+    wrap.appendChild(list);
   }
-  wrap.appendChild(list);
 
   if (state.wifiPwSsid) {
     const pwBox = el('div', { className: 'wifi-pw bevel-recessed' });
