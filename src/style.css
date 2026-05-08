@@ -1060,9 +1060,9 @@ body.kb-up #taskbar {
   background: var(--cream);
   padding: 8px 10px;
   font-size: var(--text-body);
-  letter-spacing: 4px;
   min-height: 22px;
   cursor: text;
+  word-break: break-all;
 }
 .wifi-pw-actions {
   display: flex;

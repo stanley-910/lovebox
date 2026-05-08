@@ -68,6 +68,7 @@ const state = {
   wifiConnecting: null,
   wifiPwSsid: null,
   wifiPwInput: '',
+  wifiPwKbDismissed: false,
   wifiFeedback: null,
   geo: { him: null, her: { lat: 40.7128, lon: -74.006, label: 'new york' } },
   weather: { him: null, her: null },
@@ -827,6 +828,7 @@ function openWifi() {
   state.wifiFeedback = null;
   state.wifiPwSsid = null;
   state.wifiPwInput = '';
+  state.wifiPwKbDismissed = false;
   render();
   doWifiScan();
 }
@@ -835,6 +837,7 @@ function backToSettings() {
   state.settingsView = 'main';
   state.wifiPwSsid = null;
   state.wifiPwInput = '';
+  state.wifiPwKbDismissed = false;
   state.wifiFeedback = null;
   if (keyboard) keyboard.close();
   render();
@@ -865,14 +868,20 @@ function bindWifiPwKeyboard() {
     onKey: (ch) => { state.wifiPwInput += ch; renderWifiPwField(); },
     onBackspace: () => { state.wifiPwInput = state.wifiPwInput.slice(0, -1); renderWifiPwField(); },
     onEnter: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
-    onClose: () => { /* keep panel; user can reopen with Enter */ },
+    onClose: () => { state.wifiPwKbDismissed = true; render(); },
     onSubmit: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
   });
 }
 
+function openWifiKb() {
+  state.wifiPwKbDismissed = false;
+  bindWifiPwKeyboard();
+  ensureKeyboard().open();
+}
+
 function renderWifiPwField() {
   const f = document.getElementById('wifi-pw-field');
-  if (f) f.textContent = '•'.repeat(state.wifiPwInput.length) || ' ';
+  if (f) f.textContent = state.wifiPwInput || ' ';
 }
 
 async function doConnect(ssid, password) {
@@ -885,6 +894,7 @@ async function doConnect(ssid, password) {
       state.wifiFeedback = `✓ connected to ${ssid}`;
       state.wifiPwSsid = null;
       state.wifiPwInput = '';
+      state.wifiPwKbDismissed = false;
       if (keyboard) keyboard.close();
       refreshWifiStatus();
       doWifiScan();
@@ -936,9 +946,10 @@ function renderWifi() {
         if (secured) {
           state.wifiPwSsid = n.ssid;
           state.wifiPwInput = '';
+          state.wifiPwKbDismissed = false;
           state.wifiFeedback = null;
           render();
-          setTimeout(() => { bindWifiPwKeyboard(); ensureKeyboard().open(); }, 0);
+          setTimeout(openWifiKb, 0);
         } else {
           doConnect(n.ssid, '');
         }
@@ -958,13 +969,22 @@ function renderWifi() {
     pwBox.appendChild(el('div', {
       id: 'wifi-pw-field',
       className: 'wifi-pw-field bevel-recessed',
-      onClick: () => { bindWifiPwKeyboard(); ensureKeyboard().open(); },
-    }, '•'.repeat(state.wifiPwInput.length) || ' '));
+      onClick: openWifiKb,
+    }, state.wifiPwInput || ' '));
     const actions = el('div', { className: 'wifi-pw-actions' },
       el('button', {
         className: 'settings-btn',
-        onClick: () => { state.wifiPwSsid = null; state.wifiPwInput = ''; if (keyboard) keyboard.close(); render(); },
+        onClick: () => {
+          state.wifiPwSsid = null;
+          state.wifiPwInput = '';
+          state.wifiPwKbDismissed = false;
+          if (keyboard) keyboard.close();
+          render();
+        },
       }, 'cancel'),
+      state.wifiPwKbDismissed
+        ? el('button', { className: 'settings-btn', onClick: openWifiKb }, 'show keys ▴')
+        : null,
       el('button', {
         className: 'settings-btn',
         onClick: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
@@ -973,7 +993,9 @@ function renderWifi() {
     pwBox.appendChild(actions);
     wrap.appendChild(pwBox);
 
-    setTimeout(() => { bindWifiPwKeyboard(); ensureKeyboard().open(); }, 0);
+    if (!state.wifiPwKbDismissed) {
+      setTimeout(openWifiKb, 0);
+    }
   }
 
   return renderWindow('WIFI.CFG', 'var(--ink-soft)', 'var(--ink-soft)', wrap);
