@@ -108,12 +108,10 @@ export function subscribeMood(from, callback) {
   });
 }
 
-export async function setMood(mood, from) {
-  await addDoc(moodRef, {
-    mood,
-    from,
-    timestamp: serverTimestamp(),
-  });
+export async function setMood(mood, from, custom = null) {
+  const data = { mood, from, timestamp: serverTimestamp() };
+  if (custom) data.custom = custom;
+  await addDoc(moodRef, data);
 }
 
 const canvasStrokesRef = collection(db, 'canvas_strokes');

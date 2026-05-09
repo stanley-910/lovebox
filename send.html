@@ -173,6 +173,9 @@
       <div class="mood-section">
         <div class="label">SET YOUR MOOD</div>
         <div class="mood-grid" id="moodGrid"></div>
+        <input class="login-input" id="customMoodInput" type="text" placeholder="or write your own status…" style="height:auto;padding:6px 8px;font-size:16px;">
+        <button class="btn" id="customMoodBtn" style="font-size:16px;padding:6px;">set custom status ▸</button>
+        <div class="status" id="customMoodStatus"></div>
       </div>
 
       <hr class="divider">
@@ -210,7 +213,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js';
-    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js';
     import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js';
 
     const app = initializeApp({
@@ -275,16 +278,16 @@
       { k: 'coffee', t: 'coffee' },
     ];
 
-    let currentMood = 'thinking';
+    let currentMood = null;
     const moodGrid = document.getElementById('moodGrid');
+    const moodBtns = {};
     moods.forEach(m => {
       const btn = document.createElement('button');
-      btn.className = `mood-btn ${m.k === currentMood ? 'active' : ''}`;
+      btn.className = 'mood-btn';
       btn.textContent = m.t;
       btn.onclick = async () => {
         currentMood = m.k;
-        moodGrid.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        applyActiveMood();
         await addDoc(collection(db, 'status'), {
           mood: m.k,
           from: 'him',
@@ -294,6 +297,57 @@
         setTimeout(() => document.getElementById('status').textContent = '', 1600);
       };
       moodGrid.appendChild(btn);
+      moodBtns[m.k] = btn;
+    });
+
+    function applyActiveMood() {
+      Object.entries(moodBtns).forEach(([k, b]) => {
+        b.classList.toggle('active', k === currentMood);
+      });
+    }
+
+    // Reflect Alex's last-set status on load so a refresh doesn't
+    // make it look like the saved status was lost.
+    const statusQ = query(
+      collection(db, 'status'),
+      where('from', '==', 'him'),
+      orderBy('timestamp', 'desc'),
+      limit(1)
+    );
+    onSnapshot(statusQ, (snap) => {
+      const d = snap.docs[0]?.data();
+      if (!d) return;
+      currentMood = d.mood;
+      applyActiveMood();
+      const inp = document.getElementById('customMoodInput');
+      if (inp) {
+        inp.placeholder = (d.mood === 'custom' && d.custom)
+          ? `current: ${d.custom}`
+          : 'or write your own status…';
+      }
+    });
+
+    const customMoodInput = document.getElementById('customMoodInput');
+    const customMoodBtn = document.getElementById('customMoodBtn');
+    const customMoodStatus = document.getElementById('customMoodStatus');
+    async function sendCustomMood() {
+      const text = customMoodInput.value.trim();
+      if (!text) return;
+      await addDoc(collection(db, 'status'), {
+        mood: 'custom',
+        custom: text,
+        from: 'him',
+        timestamp: serverTimestamp(),
+      });
+      moodGrid.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+      currentMood = 'custom';
+      customMoodInput.value = '';
+      customMoodStatus.textContent = `status set: ${text}`;
+      setTimeout(() => customMoodStatus.textContent = '', 1600);
+    }
+    customMoodBtn.onclick = sendCustomMood;
+    customMoodInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); sendCustomMood(); }
     });
 
     window.send = async function() {

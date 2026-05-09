@@ -1028,6 +1028,8 @@ body.kb-up .mood-custom {
   flex-direction: column;
   gap: 6px;
   height: 100%;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .settings-section-label {

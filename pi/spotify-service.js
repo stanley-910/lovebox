@@ -159,13 +159,22 @@ function logApiError(identity, label, res) {
   console.error(`[${identity}] ${label} status=${res.status} body=${(res.raw || '').slice(0, 200)}`);
 }
 
+// In-memory: last known nowPlaying per identity. When this URI changes between
+// polls the previous track has effectively just finished/skipped — Spotify's
+// recently-played API takes a minute or more to reflect that, so we promote
+// the transitioned-from track into `recent` ourselves.
+const lastNowPlaying = { him: null, her: null };
+// Last `recent` array we wrote, so we can prepend to it when the API hasn't
+// caught up yet.
+const lastRecent = { him: null, her: null };
+
 async function pollPlayback(identity) {
   if (!tokens[identity]) return;
   try {
     const [playing, queue, recent] = await Promise.all([
       spotifyGet(identity, '/me/player/currently-playing'),
       spotifyGet(identity, '/me/player/queue'),
-      spotifyGet(identity, '/me/player/recently-played?limit=5'),
+      spotifyGet(identity, '/me/player/recently-played?limit=10'),
     ]);
 
     logApiError(identity, 'currently-playing', playing);
@@ -179,10 +188,12 @@ async function pollPlayback(identity) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
+    let nowTrack = null;
     if (playing.status === 200 && playing.body && playing.body.item) {
+      nowTrack = extractTrack(playing.body.item);
       data.isPlaying = playing.body.is_playing || false;
       data.progressMs = playing.body.progress_ms || 0;
-      data.nowPlaying = extractTrack(playing.body.item);
+      data.nowPlaying = nowTrack;
       data.device = playing.body.device ? {
         name: playing.body.device.name,
         type: playing.body.device.type,
@@ -197,12 +208,33 @@ async function pollPlayback(identity) {
       data.queue = queue.body.queue.slice(0, 20).map(extractTrack);
     }
 
+    let recentList = null;
     if (recent.status === 200 && recent.body && Array.isArray(recent.body.items) && recent.body.items.length > 0) {
-      data.recent = recent.body.items.map(i => ({
+      recentList = recent.body.items.map(i => ({
         ...extractTrack(i.track),
         playedAt: i.played_at,
       }));
+    } else if (lastRecent[identity]) {
+      recentList = [...lastRecent[identity]];
     }
+
+    // If the playing track changed, the previous one effectively just ended.
+    // Promote it to the top of `recent` so the partner sees it immediately,
+    // since Spotify's recently-played endpoint lags by ~1m.
+    const prev = lastNowPlaying[identity];
+    if (prev && nowTrack && prev.uri && nowTrack.uri && prev.uri !== nowTrack.uri) {
+      const synthetic = { ...prev, playedAt: new Date().toISOString() };
+      if (!recentList) recentList = [];
+      const dedup = recentList.filter(r => r.uri !== prev.uri);
+      recentList = [synthetic, ...dedup].slice(0, 10);
+    }
+
+    if (recentList) {
+      data.recent = recentList;
+      lastRecent[identity] = recentList;
+    }
+
+    if (nowTrack) lastNowPlaying[identity] = nowTrack;
 
     await db.doc(`playback/${identity}`).set(data, { merge: true });
   } catch (err) {
