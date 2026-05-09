@@ -121,21 +121,30 @@ def wifi_scan():
     rc, out, err = _nmcli(["-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "device", "wifi", "list"])
     if rc != 0:
         return {"error": err.strip() or "scan failed", "networks": []}
-    seen, nets = set(), []
+
+    # nmcli returns one row per BSSID, so the same SSID can appear multiple
+    # times with only one row carrying the IN-USE '*' marker. Collect all
+    # rows first, then per unique SSID prefer the active one — otherwise the
+    # strongest signal — so the connected network is never silently dropped.
+    by_ssid = {}
     for line in out.splitlines():
         parts = _parse_terse(line)
         if len(parts) < 4: continue
         in_use, ssid, sig, sec = parts[0], parts[1], parts[2], parts[3]
-        if not ssid or ssid in seen: continue
-        seen.add(ssid)
+        if not ssid: continue
         try: sig = int(sig)
         except ValueError: sig = 0
-        nets.append({
-            "ssid": ssid,
-            "signal": sig,
-            "security": sec or "",
-            "in_use": in_use == "*",
-        })
+        active = in_use == "*"
+        existing = by_ssid.get(ssid)
+        if existing is None or (active and not existing["in_use"]) or \
+           (active == existing["in_use"] and sig > existing["signal"]):
+            by_ssid[ssid] = {
+                "ssid": ssid,
+                "signal": sig,
+                "security": sec or "",
+                "in_use": active,
+            }
+    nets = list(by_ssid.values())
     nets.sort(key=lambda n: (-1 if n["in_use"] else 0, -n["signal"]))
     return {"networks": nets}
 
