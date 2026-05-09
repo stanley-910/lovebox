@@ -608,8 +608,10 @@ body.kb-up #taskbar {
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
   border: none;
   font-family: var(--font);
-  font-size: var(--text-sm);
-  padding: 4px 10px;
+  font-size: var(--text-body);
+  padding: 10px 18px;
+  min-height: 44px;
+  min-width: 64px;
   cursor: pointer;
   color: var(--ink);
 }
@@ -651,7 +653,7 @@ body.kb-up #taskbar {
   top: 6px;
   left: 6px;
   display: flex;
-  gap: 3px;
+  gap: 6px;
 }
 
 .draw-undo-btn {
@@ -659,8 +661,10 @@ body.kb-up #taskbar {
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
   border: none;
   font-family: var(--font);
-  font-size: var(--text-sm);
-  padding: 4px 12px;
+  font-size: var(--text-body);
+  padding: 10px 18px;
+  min-height: 44px;
+  min-width: 56px;
   cursor: pointer;
   color: var(--ink);
 }
@@ -677,8 +681,10 @@ body.kb-up #taskbar {
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo);
   border: none;
   font-family: var(--font);
-  font-size: var(--text-sm);
-  padding: 4px 12px;
+  font-size: var(--text-body);
+  padding: 10px 18px;
+  min-height: 44px;
+  min-width: 72px;
   cursor: pointer;
   color: var(--ink);
 }
