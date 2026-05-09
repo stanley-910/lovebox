@@ -91,7 +91,7 @@ html, body {
   color: var(--ink);
   -webkit-user-select: none;
   user-select: none;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
   cursor: default;
 }
 
