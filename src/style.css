@@ -319,6 +319,10 @@ body.kb-just-closed #desktop {
   animation: slidein .3s ease-out;
 }
 
+#toast.leaving {
+  animation: slideout .3s ease-in forwards;
+}
+
 .toast-card {
   background: var(--win);
   box-shadow: inset 1px 1px 0 var(--bevel-hi), inset -1px -1px 0 var(--bevel-lo), 2px 2px 0 rgba(0,0,0,.3);
@@ -796,11 +800,74 @@ body.kb-just-closed #desktop {
 }
 
 /* Mood */
+.mood-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
 .mood-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.mood-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mood-custom-label {
+  font-size: var(--text-sm);
+  color: var(--pink-deep);
+  letter-spacing: 0.5px;
+}
+
+.mood-custom-field {
+  background: var(--cream);
+  padding: 6px 10px;
+  font-size: var(--text-body);
+  min-height: 28px;
+  cursor: text;
+  word-break: break-word;
+  color: var(--ink);
+}
+
+.mood-custom-field.empty {
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+
+.mood-custom-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mood-custom-actions .settings-btn,
+.mood-custom-actions .btn-send-sm {
+  flex: 1;
+  text-align: center;
+}
+
+/* Float the custom-status row above the keyboard so the field + actions
+   stay visible while typing (matches the wi-fi password preview). */
+body.kb-up .mood-custom {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 286px;
+  z-index: 25;
+  background: var(--win);
+  padding: 6px 8px;
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-lo),
+    inset -1px -1px 0 var(--bevel-hi),
+    0 -2px 6px rgba(0,0,0,.25);
 }
 
 .mood-btn {
@@ -1049,6 +1116,10 @@ body.kb-just-closed #desktop {
   color: var(--ink-soft);
   min-width: 28px;
   text-align: right;
+  white-space: nowrap;
+}
+.wifi-row.in-use .wifi-meta {
+  color: var(--green);
 }
 .wifi-feedback {
   font-size: var(--text-sm);
@@ -1066,14 +1137,13 @@ body.kb-just-closed #desktop {
   gap: 6px;
 }
 /* While the on-screen keyboard is up, float the password preview just above
-   it (keyboard is 220px tall, anchored at bottom of #app). This keeps the
-   field + actions visible without scrolling, regardless of how much else
-   is rendered above. z-index sits above the keyboard's z-index of 20. */
+   it. Keyboard is 280px tall (see ensureKeyboard in main.js), anchored at
+   bottom of #app. z-index sits above the keyboard's z-index of 20. */
 body.kb-up .wifi-pw {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 226px;
+  bottom: 286px;
   margin-top: 0;
   z-index: 25;
   background: var(--win);
@@ -1127,6 +1197,11 @@ body.kb-up .wifi-pw {
 @keyframes slidein {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideout {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(20px); opacity: 0; }
 }
 
 @keyframes kbslideup {

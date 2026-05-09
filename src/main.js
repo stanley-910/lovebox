@@ -1,109 +1,188 @@
-import { subscribeMessages, sendMessage as fbSendNote, setMood as fbSetMood, subscribeMood, subscribeCanvas, addStroke, deleteStroke, clearCanvas, markRead, subscribeSnapshots, saveSnapshot, signIn, onAuth, getIdentity, subscribePlayback, subscribeGeo } from './firebase.js';
-import { createKeyboard } from './keyboard.js';
-import { getWifiStatus, scanWifi, connectWifi, disconnectWifi, getWifiProfile, setWifiAutoconnect } from './wifi.js';
+import {
+  subscribeMessages,
+  sendMessage as fbSendNote,
+  setMood as fbSetMood,
+  subscribeMood,
+  subscribeCanvas,
+  addStroke,
+  deleteStroke,
+  clearCanvas,
+  markRead,
+  subscribeSnapshots,
+  saveSnapshot,
+  signIn,
+  onAuth,
+  getIdentity,
+  subscribePlayback,
+  subscribeGeo,
+} from "./firebase.js";
+import { createKeyboard } from "./keyboard.js";
+import {
+  getWifiStatus,
+  scanWifi,
+  connectWifi,
+  disconnectWifi,
+  getWifiProfile,
+  setWifiAutoconnect,
+} from "./wifi.js";
 
 const MODULES = [
-  { id: 'home',  label: 'home',  glyph: '⌂' },
-  { id: 'inbox', label: 'inbox', glyph: '✉' },
-  { id: 'draw',  label: 'draw',  glyph: '✎' },
-  { id: 'note',  label: 'note',  glyph: '⏎' },
-  { id: 'mood',  label: 'mood',  glyph: '♡' },
-  { id: 'play',  label: 'music', glyph: '♪' },
-  { id: 'settings', label: 'sys', glyph: '⚙' },
+  { id: "home", label: "home", glyph: "⌂" },
+  { id: "inbox", label: "inbox", glyph: "✉" },
+  { id: "draw", label: "draw", glyph: "✎" },
+  { id: "note", label: "note", glyph: "⏎" },
+  { id: "mood", label: "mood", glyph: "♡" },
+  { id: "play", label: "music", glyph: "♪" },
+  { id: "settings", label: "sys", glyph: "⚙" },
 ];
 
 const MOODS = [
-  { k: 'sleepy',   ascii: '(- _ -) Z z z', t: 'sleepy',          status: 'sleeping ◐' },
-  { k: 'thinking', ascii: '( ◔ ◡ ◔ )',    t: 'thinking of you', status: 'thinking of u' },
-  { k: 'busy',     ascii: '[> _ <]',       t: 'heads down',      status: 'heads down ◧' },
-  { k: 'happy',    ascii: '\\( ^ ω ^ )/',  t: 'happy today',     status: 'awake & humming' },
-  { k: 'missing',  ascii: '( ; _ ; )♡',   t: 'missing you',     status: 'missing you ♡' },
-  { k: 'coffee',   ascii: 'c[_] ( ◑ ◡ ◑ )', t: 'caffeinated',  status: 'caffeinated c[_]' },
+  { k: "sleepy", ascii: "(- _ -) Z z z", t: "sleepy", status: "sleeping ◐" },
+  {
+    k: "thinking",
+    ascii: "( ◔ ◡ ◔ )",
+    t: "thinking of you",
+    status: "thinking of u",
+  },
+  { k: "busy", ascii: "[> _ <]", t: "heads down", status: "heads down ◧" },
+  {
+    k: "happy",
+    ascii: "\\( ^ ω ^ )/",
+    t: "happy today",
+    status: "awake & humming",
+  },
+  {
+    k: "missing",
+    ascii: "( ; _ ; )♡",
+    t: "missing you",
+    status: "missing you ♡",
+  },
+  {
+    k: "coffee",
+    ascii: "c[_] ( ◑ ◡ ◑ )",
+    t: "caffeinated",
+    status: "caffeinated c[_]",
+  },
 ];
 
-const DRAW_COLORS = ['#1a1410', '#a83a52', '#4a7a4a', '#5a78a8', '#c89020', '#9a4a8a'];
-const DRAW_COLORS_DARK = ['#e8d8c4', '#d8627a', '#7ac98a', '#8aa6dc', '#c89020', '#9a4a8a'];
+const DRAW_COLORS = [
+  "#1a1410",
+  "#a83a52",
+  "#4a7a4a",
+  "#5a78a8",
+  "#c89020",
+  "#9a4a8a",
+];
+const DRAW_COLORS_DARK = [
+  "#e8d8c4",
+  "#d8627a",
+  "#7ac98a",
+  "#8aa6dc",
+  "#c89020",
+  "#9a4a8a",
+];
 
 const ASCII_DIGITS = {
-  '0': ['███','█ █','█ █','█ █','███'],
-  '1': ['  █','  █','  █','  █','  █'],
-  '2': ['███','  █','███','█  ','███'],
-  '3': ['███','  █','███','  █','███'],
-  '4': ['█ █','█ █','███','  █','  █'],
-  '5': ['███','█  ','███','  █','███'],
-  '6': ['███','█  ','███','█ █','███'],
-  '7': ['███','  █','  █','  █','  █'],
-  '8': ['███','█ █','███','█ █','███'],
-  '9': ['███','█ █','███','  █','███'],
-  ':': ['   ',' █ ','   ',' █ ','   '],
-  ' ': ['   ','   ','   ','   ','   '],
+  0: ["███", "█ █", "█ █", "█ █", "███"],
+  1: ["  █", "  █", "  █", "  █", "  █"],
+  2: ["███", "  █", "███", "█  ", "███"],
+  3: ["███", "  █", "███", "  █", "███"],
+  4: ["█ █", "█ █", "███", "  █", "  █"],
+  5: ["███", "█  ", "███", "  █", "███"],
+  6: ["███", "█  ", "███", "█ █", "███"],
+  7: ["███", "  █", "  █", "  █", "  █"],
+  8: ["███", "█ █", "███", "█ █", "███"],
+  9: ["███", "█ █", "███", "  █", "███"],
+  ":": ["   ", " █ ", "   ", " █ ", "   "],
+  " ": ["   ", "   ", "   ", "   ", "   "],
 };
 
 // ── State ──
 const state = {
   identity: null, // 'him' or 'her', set after auth
-  theme: localStorage.getItem('lovebox-theme') || 'light',
-  active: 'home',
-  mood: 'thinking',
+  theme: localStorage.getItem("lovebox-theme") || "light",
+  active: "home",
+  mood: "thinking",
   messages: [],
   sentFlash: false,
   incomingToast: null,
-  drawColor: '#a83a52',
+  moodCustom: null,
+  customStatusInput: "",
+  customStatusKbDismissed: false,
+  drawColor: "#a83a52",
   canvasStrokes: [],
   drawRedoStack: [],
   currentStroke: null,
   canvasSnapshots: [],
-  drawView: 'canvas',
-  noteText: '',
-  searchQuery: '',
+  drawView: "canvas",
+  noteText: "",
+  searchQuery: "",
   lastMessageCount: 0,
   sleeping: false,
   noteKbDismissed: false,
   partnerPlayback: null,
-  settingsView: 'main',
+  settingsView: "main",
   wifiStatus: null,
   wifiNetworks: [],
   wifiScanning: false,
   wifiError: null,
   wifiConnecting: null,
   wifiPwSsid: null,
-  wifiPwInput: '',
+  wifiPwInput: "",
   wifiPwKbDismissed: false,
   wifiFeedback: null,
   wifiDetailsSsid: null,
   wifiProfile: null,
   wifiBusy: false,
-  geo: { him: null, her: { lat: 40.7128, lon: -74.006, label: 'new york' } },
+  geo: { him: null, her: { lat: 40.7128, lon: -74.006, label: "new york" } },
   weather: { him: null, her: null },
 };
 
 function partnerIdentity() {
-  return state.identity === 'him' ? 'her' : 'him';
+  return state.identity === "him" ? "her" : "him";
 }
 
 // ── Weather (Open-Meteo, no API key) ──
 const WMO_DESC = {
-  0: 'clear', 1: 'clear', 2: 'p.cloudy', 3: 'overcast',
-  45: 'fog', 48: 'fog',
-  51: 'drizzle', 53: 'drizzle', 55: 'drizzle',
-  56: 'icy drizzle', 57: 'icy drizzle',
-  61: 'rain', 63: 'rain', 65: 'heavy rain',
-  66: 'icy rain', 67: 'icy rain',
-  71: 'snow', 73: 'snow', 75: 'heavy snow', 77: 'snow',
-  80: 'showers', 81: 'showers', 82: 'showers',
-  85: 'snow show', 86: 'snow show',
-  95: 'thunder', 96: 'thunder', 99: 'thunder',
+  0: "clear",
+  1: "clear",
+  2: "p.cloudy",
+  3: "overcast",
+  45: "fog",
+  48: "fog",
+  51: "drizzle",
+  53: "drizzle",
+  55: "drizzle",
+  56: "icy drizzle",
+  57: "icy drizzle",
+  61: "rain",
+  63: "rain",
+  65: "heavy rain",
+  66: "icy rain",
+  67: "icy rain",
+  71: "snow",
+  73: "snow",
+  75: "heavy snow",
+  77: "snow",
+  80: "showers",
+  81: "showers",
+  82: "showers",
+  85: "snow show",
+  86: "snow show",
+  95: "thunder",
+  96: "thunder",
+  99: "thunder",
 };
 
 async function fetchWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('weather fetch failed');
+  if (!res.ok) throw new Error("weather fetch failed");
   const data = await res.json();
   const c = data.current || {};
   return {
     temp: Math.round(c.temperature_2m),
-    desc: WMO_DESC[c.weather_code] || '—',
+    desc: WMO_DESC[c.weather_code] || "—",
   };
 }
 
@@ -112,34 +191,34 @@ async function refreshWeatherFor(key) {
   if (!g || g.lat == null || g.lon == null) return;
   try {
     state.weather[key] = await fetchWeather(g.lat, g.lon);
-    if (state.active === 'home') render();
+    if (state.active === "home") render();
   } catch (e) {
     // network blip — leave stale data in place
   }
 }
 
 function refreshAllWeather() {
-  refreshWeatherFor('him');
-  refreshWeatherFor('her');
+  refreshWeatherFor("him");
+  refreshWeatherFor("her");
 }
 
 function fmtWeatherLine(key) {
   const g = state.geo[key];
   const w = state.weather[key];
-  if (!g) return '○ — · location not set';
+  if (!g) return "○ — · location not set";
   const label = g.label || `${g.lat.toFixed(1)},${g.lon.toFixed(1)}`;
   if (!w) return `○ ${label} · loading…`;
   return `○ ${label} · ${w.temp}° ${w.desc}`;
 }
 
-document.documentElement.setAttribute('data-theme', state.theme);
+document.documentElement.setAttribute("data-theme", state.theme);
 
 // ── On-screen keyboard (singleton, lives at #app level) ──
 let keyboard = null;
 function ensureKeyboard() {
   if (keyboard) return keyboard;
   keyboard = createKeyboard({ theme: state.theme, height: 280 });
-  document.getElementById('app').appendChild(keyboard.el);
+  document.getElementById("app").appendChild(keyboard.el);
   return keyboard;
 }
 
@@ -151,63 +230,75 @@ function bindKeyboard(handlers) {
 function fmtTime(d) {
   const h = d.getHours();
   const m = d.getMinutes();
-  const ampm = h >= 12 ? 'pm' : 'am';
+  const ampm = h >= 12 ? "pm" : "am";
   const h12 = ((h + 11) % 12) + 1;
-  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
 function fmtDate(d) {
-  return d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' }).toLowerCase();
+  return d
+    .toLocaleDateString("en", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    })
+    .toLowerCase();
 }
 
 function fmtMsgTime(timestamp) {
-  if (!timestamp) return 'now';
+  if (!timestamp) return "now";
   const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
   const now = new Date();
   const diff = now - d;
-  if (diff < 60000) return 'now';
+  if (diff < 60000) return "now";
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
   if (diff < 86400000) return fmtTime(d);
   const days = Math.floor(diff / 86400000);
-  if (days === 1) return 'yest';
-  if (days < 7) return d.toLocaleDateString('en', { weekday: 'short' }).toLowerCase();
-  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }).toLowerCase();
+  if (days === 1) return "yest";
+  if (days < 7)
+    return d.toLocaleDateString("en", { weekday: "short" }).toLowerCase();
+  return d
+    .toLocaleDateString("en", { month: "short", day: "numeric" })
+    .toLowerCase();
 }
 
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'className') e.className = v;
-    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
-    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    if (k === "className") e.className = v;
+    else if (k === "style" && typeof v === "object") Object.assign(e.style, v);
+    else if (k.startsWith("on"))
+      e.addEventListener(k.slice(2).toLowerCase(), v);
     else e.setAttribute(k, v);
   }
   for (const c of children) {
-    if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+    if (typeof c === "string") e.appendChild(document.createTextNode(c));
     else if (c) e.appendChild(c);
   }
   return e;
 }
 
 // ── ASCII Clock ──
-function renderAsciiClock(timeStr, color = '#1a1410', size = 9) {
-  const rows = ['', '', '', '', ''];
+function renderAsciiClock(timeStr, color = "#1a1410", size = 9) {
+  const rows = ["", "", "", "", ""];
   for (const ch of timeStr) {
-    const g = ASCII_DIGITS[ch] || ASCII_DIGITS[' '];
-    for (let r = 0; r < 5; r++) rows[r] += g[r] + ' ';
+    const g = ASCII_DIGITS[ch] || ASCII_DIGITS[" "];
+    for (let r = 0; r < 5; r++) rows[r] += g[r] + " ";
   }
-  const wrap = el('div', { className: 'ascii-clock' });
+  const wrap = el("div", { className: "ascii-clock" });
   for (let i = 0; i < 5; i++) {
-    const row = el('div', { className: 'ascii-clock-row' });
+    const row = el("div", { className: "ascii-clock-row" });
     for (const c of rows[i]) {
-      row.appendChild(el('span', {
-        className: 'ascii-clock-cell',
-        style: {
-          width: size + 'px',
-          height: size + 'px',
-          background: c === '█' ? color : 'transparent',
-        },
-      }));
+      row.appendChild(
+        el("span", {
+          className: "ascii-clock-cell",
+          style: {
+            width: size + "px",
+            height: size + "px",
+            background: c === "█" ? color : "transparent",
+          },
+        }),
+      );
     }
     wrap.appendChild(row);
   }
@@ -216,16 +307,26 @@ function renderAsciiClock(timeStr, color = '#1a1410', size = 9) {
 
 // ── Window wrapper ──
 function renderWindow(title, accent, chip, body) {
-  const isDark = state.theme === 'dark';
-  const win = el('div', { className: 'window' });
-  const titleBar = el('div', { className: 'window-title', style: { background: isDark ? 'var(--titlebar-bg)' : accent } },
-    el('span', { className: 'window-title-left' },
-      el('span', { className: 'window-title-dot', style: isDark ? { background: chip } : {} }),
-      title
+  const isDark = state.theme === "dark";
+  const win = el("div", { className: "window" });
+  const titleBar = el(
+    "div",
+    {
+      className: "window-title",
+      style: { background: isDark ? "var(--titlebar-bg)" : accent },
+    },
+    el(
+      "span",
+      { className: "window-title-left" },
+      el("span", {
+        className: "window-title-dot",
+        style: isDark ? { background: chip } : {},
+      }),
+      title,
     ),
   );
   win.appendChild(titleBar);
-  const bodyWrap = el('div', { className: 'window-body' });
+  const bodyWrap = el("div", { className: "window-body" });
   bodyWrap.appendChild(body);
   win.appendChild(bodyWrap);
   return win;
@@ -235,130 +336,252 @@ function renderWindow(title, accent, chip, body) {
 
 function renderHome() {
   const now = new Date();
-  const samTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const caliTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const samTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
+  const caliTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
+  );
   const myTime = fmtTime(caliTime);
-  const timeDigits = fmtTime(samTime).replace(/ (am|pm)/, '');
-  const ampm = samTime.getHours() >= 12 ? 'pm' : 'am';
-  const moodData = MOODS.find(m => m.k === state.mood) || MOODS[1];
-  const unread = state.messages.filter(m => !m.read);
+  const timeDigits = fmtTime(samTime).replace(/ (am|pm)/, "");
+  const ampm = samTime.getHours() >= 12 ? "pm" : "am";
+  const moodData = MOODS.find((m) => m.k === state.mood) || MOODS[1];
+  const unread = state.messages.filter((m) => !m.read);
   const newest = state.messages[0];
   const rest = state.messages.slice(1, 4);
 
-  const left = el('div', { className: 'home-left' },
-    el('div', { className: 'home-header' },
-      el('span', { className: 'home-header-him' }, `◐ stanley · ${myTime}`),
+  const left = el(
+    "div",
+    { className: "home-left" },
+    el(
+      "div",
+      { className: "home-header" },
+      el("span", { className: "home-header-him" }, `◐ stanley · ${myTime}`),
     ),
-    el('div', { className: 'home-clock-wrap' },
-      renderAsciiClock(timeDigits, 'var(--ink)'),
-      el('div', { className: 'home-clock-meta' }, `${ampm} · ${fmtDate(now)}`),
+    el(
+      "div",
+      { className: "home-clock-wrap" },
+      renderAsciiClock(timeDigits, "var(--ink)"),
+      el("div", { className: "home-clock-meta" }, `${ampm} · ${fmtDate(now)}`),
     ),
-    el('div', { className: 'home-status' },
-      el('div', { className: 'home-status-inner' },
-        el('div', { className: 'home-status-label' }, 'STATUS://'),
-        el('div', { className: 'home-status-text' }, moodData.status),
+    el(
+      "div",
+      { className: "home-status" },
+      el(
+        "div",
+        { className: "home-status-inner" },
+        el("div", { className: "home-status-label" }, "STATUS://"),
+        el(
+          "div",
+          { className: "home-status-text" },
+          state.moodCustom || moodData.status,
+        ),
       ),
     ),
-    el('div', { className: 'home-footer' },
-      el('span', {}, fmtWeatherLine('her')),
-      el('span', {}, fmtWeatherLine('him')),
+    el(
+      "div",
+      { className: "home-footer" },
+      el("span", {}, fmtWeatherLine("her")),
+      el("span", {}, fmtWeatherLine("him")),
     ),
   );
 
-  const mailPreview = el('div', { className: 'bevel-recessed mail-preview' });
+  const mailPreview = el("div", { className: "bevel-recessed mail-preview" });
   if (state.messages.length === 0) {
-    mailPreview.appendChild(el('div', { style: { color: 'var(--ink-soft)', fontSize: '13px' } }, 'no messages yet'));
+    mailPreview.appendChild(
+      el(
+        "div",
+        { style: { color: "var(--ink-soft)", fontSize: "13px" } },
+        "no messages yet",
+      ),
+    );
   }
   const shown = state.messages.slice(0, 5);
   for (const x of shown) {
     const isUnread = !x.read;
-    const sender = el('span', { style: { color: x.from === 'him' ? 'var(--pink-deep)' : 'var(--blue)' } }, `${x.from === 'him' ? 'S:' : 'L:'}`);
-    const textSpan = el('span', { className: 'mail-row-text', style: isUnread ? { color: 'var(--ink)' } : {} }, ` ${x.text || '(drawing)'}`);
-    const timeSpan = el('span', { className: 'mail-row-time' }, fmtMsgTime(x.timestamp));
-    const dot = el('span', { className: `mail-row-dot ${isUnread ? 'unread' : ''}` }, isUnread ? '●' : '');
-    const row = el('div', { className: 'mail-row' }, sender, textSpan, dot, timeSpan);
+    const sender = el(
+      "span",
+      {
+        style: { color: x.from === "him" ? "var(--pink-deep)" : "var(--blue)" },
+      },
+      `${x.from === "him" ? "S:" : "L:"}`,
+    );
+    const textSpan = el(
+      "span",
+      {
+        className: "mail-row-text",
+        style: isUnread ? { color: "var(--ink)" } : {},
+      },
+      ` ${x.text || "(drawing)"}`,
+    );
+    const timeSpan = el(
+      "span",
+      { className: "mail-row-time" },
+      fmtMsgTime(x.timestamp),
+    );
+    const dot = el(
+      "span",
+      { className: `mail-row-dot ${isUnread ? "unread" : ""}` },
+      isUnread ? "●" : "",
+    );
+    const row = el(
+      "div",
+      { className: "mail-row" },
+      sender,
+      textSpan,
+      dot,
+      timeSpan,
+    );
     mailPreview.appendChild(row);
   }
 
-  const readAllBtn = el('button', { className: 'btn-readall', onClick: () => switchModule('inbox') }, 'read all ▸');
+  const readAllBtn = el(
+    "button",
+    { className: "btn-readall", onClick: () => switchModule("inbox") },
+    "read all ▸",
+  );
 
-  const right = el('div', { className: 'home-right' },
-    el('div', { className: 'mail-header' },
-      el('span', { className: 'mail-header-label' }, `▸ MAIL.LOG · ${unread.length} new`),
-      el('span', { className: 'mail-header-status' }, '● online'),
+  const right = el(
+    "div",
+    { className: "home-right" },
+    el(
+      "div",
+      { className: "mail-header" },
+      el(
+        "span",
+        { className: "mail-header-label" },
+        `▸ MAIL.LOG · ${unread.length} new`,
+      ),
+      el("span", { className: "mail-header-status" }, "● online"),
     ),
     mailPreview,
     readAllBtn,
   );
 
-  const grid = el('div', { className: 'home-grid' }, left, right);
-  return renderWindow('ATRIUM.SYS', 'var(--ink)', 'var(--pink)', grid);
+  const grid = el("div", { className: "home-grid" }, left, right);
+  return renderWindow("ATRIUM.SYS", "var(--ink)", "var(--pink)", grid);
 }
 
 function renderInbox() {
-  const body = el('div', { style: { display: 'flex', flexDirection: 'column', height: '100%', gap: '4px' } });
+  const body = el("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+      gap: "4px",
+    },
+  });
 
   const q = state.searchQuery;
-  const searchField = el('div', {
-    className: `inbox-search-field ${q ? '' : 'empty'}`,
-    onClick: () => openInboxSearch(),
-  }, q || '');
-  const searchRow = el('div', { className: 'inbox-search-row' },
-    el('span', { className: 'inbox-search-label' }, 'FIND:'),
+  const searchField = el(
+    "div",
+    {
+      className: `inbox-search-field ${q ? "" : "empty"}`,
+      onClick: () => openInboxSearch(),
+    },
+    q || "",
+  );
+  const searchRow = el(
+    "div",
+    { className: "inbox-search-row" },
+    el("span", { className: "inbox-search-label" }, "FIND:"),
     searchField,
   );
   if (q) {
-    searchRow.appendChild(el('button', {
-      className: 'inbox-search-clear',
-      onClick: (e) => {
-        e.stopPropagation();
-        state.searchQuery = '';
-        const kb = ensureKeyboard();
-        kb.close();
-        render();
-      },
-    }, 'clear'));
+    searchRow.appendChild(
+      el(
+        "button",
+        {
+          className: "inbox-search-clear",
+          onClick: (e) => {
+            e.stopPropagation();
+            state.searchQuery = "";
+            const kb = ensureKeyboard();
+            kb.close();
+            render();
+          },
+        },
+        "clear",
+      ),
+    );
   }
   body.appendChild(searchRow);
 
-  body.appendChild(el('div', { className: 'inbox-header' },
-    el('span', {}, 'FROM'),
-    el('span', {}, 'MSG'),
-    el('span', {}, ''),
-    el('span', {}, 'TIME'),
-  ));
+  body.appendChild(
+    el(
+      "div",
+      { className: "inbox-header" },
+      el("span", {}, "FROM"),
+      el("span", {}, "MSG"),
+      el("span", {}, ""),
+      el("span", {}, "TIME"),
+    ),
+  );
 
-  const list = el('div', { className: 'inbox-list' });
+  const list = el("div", { className: "inbox-list" });
   const filter = q.toLowerCase();
   const filtered = filter
-    ? state.messages.filter(m => (m.text || '').toLowerCase().includes(filter))
+    ? state.messages.filter((m) =>
+        (m.text || "").toLowerCase().includes(filter),
+      )
     : state.messages;
   for (const m of filtered) {
     const isUnread = !m.read;
-    list.appendChild(el('div', { className: 'inbox-row' },
-      el('span', {
-        className: 'inbox-from',
-        style: { color: m.from === 'him' ? 'var(--pink-deep)' : 'var(--blue)' },
-      }, m.from === 'him' ? 'S:' : 'L:'),
-      el('span', { className: `inbox-text ${isUnread ? 'unread' : ''}` }, m.text || '(drawing)'),
-      el('span', { className: `inbox-dot ${isUnread ? 'unread' : ''}` }, isUnread ? '●' : ''),
-      el('span', { className: 'inbox-time' }, fmtMsgTime(m.timestamp)),
-    ));
+    list.appendChild(
+      el(
+        "div",
+        { className: "inbox-row" },
+        el(
+          "span",
+          {
+            className: "inbox-from",
+            style: {
+              color: m.from === "him" ? "var(--pink-deep)" : "var(--blue)",
+            },
+          },
+          m.from === "him" ? "S:" : "L:",
+        ),
+        el(
+          "span",
+          { className: `inbox-text ${isUnread ? "unread" : ""}` },
+          m.text || "(drawing)",
+        ),
+        el(
+          "span",
+          { className: `inbox-dot ${isUnread ? "unread" : ""}` },
+          isUnread ? "●" : "",
+        ),
+        el("span", { className: "inbox-time" }, fmtMsgTime(m.timestamp)),
+      ),
+    );
   }
   body.appendChild(list);
-  return renderWindow('MAIL.LOG ▸ all', 'var(--pink-deep)', 'var(--pink-deep)', body);
+  return renderWindow(
+    "MAIL.LOG ▸ all",
+    "var(--pink-deep)",
+    "var(--pink-deep)",
+    body,
+  );
 }
 
 function openInboxSearch() {
   const kb = ensureKeyboard();
-  kb.setLabel('SEARCH.SYS');
+  kb.setLabel("SEARCH.SYS");
   kb.open();
   // Rebind handlers (createKeyboard captures opts at construction; we set
   // module-level callbacks via wrapper functions on state).
   bindKeyboard({
-    onKey: (ch) => { state.searchQuery += ch; render(); },
-    onBackspace: () => { state.searchQuery = state.searchQuery.slice(0, -1); render(); },
-    onEnter: () => { kb.close(); },
+    onKey: (ch) => {
+      state.searchQuery += ch;
+      render();
+    },
+    onBackspace: () => {
+      state.searchQuery = state.searchQuery.slice(0, -1);
+      render();
+    },
+    onEnter: () => {
+      kb.close();
+    },
     onClose: () => {},
   });
 }
@@ -370,8 +593,8 @@ function drawStrokeCtx(ctx, stroke) {
   if (!stroke.points || stroke.points.length < 2) return;
   ctx.strokeStyle = stroke.color;
   ctx.lineWidth = stroke.width || 3;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
   for (let i = 1; i < stroke.points.length; i++) {
@@ -382,8 +605,8 @@ function drawStrokeCtx(ctx, stroke) {
 
 function renderCommittedStrokes() {
   if (!drawOffscreen) return;
-  const ctx = drawOffscreen.getContext('2d');
-  ctx.fillStyle = state.theme === 'dark' ? '#1a1d24' : '#f4ead8';
+  const ctx = drawOffscreen.getContext("2d");
+  ctx.fillStyle = state.theme === "dark" ? "#1a1d24" : "#f4ead8";
   ctx.fillRect(0, 0, drawOffscreen.width, drawOffscreen.height);
   for (const stroke of state.canvasStrokes) {
     drawStrokeCtx(ctx, stroke);
@@ -393,7 +616,7 @@ function renderCommittedStrokes() {
 
 function compositeDrawCanvas() {
   if (!drawCanvasEl || !drawOffscreen) return;
-  const ctx = drawCanvasEl.getContext('2d');
+  const ctx = drawCanvasEl.getContext("2d");
   ctx.drawImage(drawOffscreen, 0, 0);
   if (state.currentStroke) {
     drawStrokeCtx(ctx, state.currentStroke);
@@ -401,70 +624,128 @@ function compositeDrawCanvas() {
 }
 
 function renderDraw() {
-  const sidebar = el('div', { className: 'draw-sidebar' });
+  const sidebar = el("div", { className: "draw-sidebar" });
 
-  if (state.drawView === 'gallery') {
-    const gallery = el('div', { className: 'draw-gallery bevel-recessed' });
+  if (state.drawView === "gallery") {
+    const gallery = el("div", { className: "draw-gallery bevel-recessed" });
     if (state.canvasSnapshots.length === 0) {
-      gallery.appendChild(el('div', { className: 'draw-gallery-empty' }, 'no saved drawings yet'));
+      gallery.appendChild(
+        el("div", { className: "draw-gallery-empty" }, "no saved drawings yet"),
+      );
     } else {
       for (const snap of state.canvasSnapshots) {
-        const thumb = el('div', { className: 'draw-gallery-thumb' },
-          el('img', { src: snap.imageUrl }),
-          el('div', { className: 'draw-gallery-time' }, fmtMsgTime(snap.timestamp)),
+        const thumb = el(
+          "div",
+          { className: "draw-gallery-thumb" },
+          el("img", { src: snap.imageUrl }),
+          el(
+            "div",
+            { className: "draw-gallery-time" },
+            fmtMsgTime(snap.timestamp),
+          ),
         );
         gallery.appendChild(thumb);
       }
     }
-    sidebar.appendChild(el('button', {
-      className: 'draw-gallery-btn',
-      onClick: () => { state.drawView = 'canvas'; render(); },
-    }, 'back'));
+    sidebar.appendChild(
+      el(
+        "button",
+        {
+          className: "draw-gallery-btn",
+          onClick: () => {
+            state.drawView = "canvas";
+            render();
+          },
+        },
+        "back",
+      ),
+    );
 
-    const grid = el('div', { className: 'draw-grid' }, gallery, sidebar);
-    return renderWindow('DRAW.EXE', 'var(--green)', 'var(--green)', grid);
+    const grid = el("div", { className: "draw-grid" }, gallery, sidebar);
+    return renderWindow("DRAW.EXE", "var(--green)", "var(--green)", grid);
   }
 
-  const canvasWrap = el('div', { className: 'draw-canvas-wrap bevel-recessed' });
-  const canvas = el('canvas', {});
+  const canvasWrap = el("div", {
+    className: "draw-canvas-wrap bevel-recessed",
+  });
+  const canvas = el("canvas", {});
   canvasWrap.appendChild(canvas);
 
-  const undoRedoWrap = el('div', { className: 'draw-undo-wrap' },
-    el('button', { className: 'draw-undo-btn', onClick: () => {
-      const myStrokes = state.canvasStrokes.filter(s => s.from === state.identity);
-      if (!myStrokes.length) return;
-      const last = myStrokes[myStrokes.length - 1];
-      state.drawRedoStack.push({ points: last.points, color: last.color, width: last.width, from: last.from });
-      deleteStroke(last.id);
-    }}, 'undo'),
-    el('button', { className: 'draw-undo-btn', onClick: () => {
-      if (!state.drawRedoStack.length) return;
-      const stroke = state.drawRedoStack.pop();
-      addStroke(stroke);
-    }}, 'redo'),
+  const undoRedoWrap = el(
+    "div",
+    { className: "draw-undo-wrap" },
+    el(
+      "button",
+      {
+        className: "draw-undo-btn",
+        onClick: () => {
+          const myStrokes = state.canvasStrokes.filter(
+            (s) => s.from === state.identity,
+          );
+          if (!myStrokes.length) return;
+          const last = myStrokes[myStrokes.length - 1];
+          state.drawRedoStack.push({
+            points: last.points,
+            color: last.color,
+            width: last.width,
+            from: last.from,
+          });
+          deleteStroke(last.id);
+        },
+      },
+      "undo",
+    ),
+    el(
+      "button",
+      {
+        className: "draw-undo-btn",
+        onClick: () => {
+          if (!state.drawRedoStack.length) return;
+          const stroke = state.drawRedoStack.pop();
+          addStroke(stroke);
+        },
+      },
+      "redo",
+    ),
   );
   canvasWrap.appendChild(undoRedoWrap);
 
-  const saveBtn = el('button', { className: 'draw-save', onClick: () => {
-    if (!drawCanvasEl) return;
-    const dataUrl = drawCanvasEl.toDataURL('image/png');
-    saveSnapshot(dataUrl, state.identity);
-    saveBtn.textContent = '✓';
-    setTimeout(() => { if (saveBtn.isConnected) saveBtn.textContent = 'save'; }, 1200);
-  }}, 'save');
+  const saveBtn = el(
+    "button",
+    {
+      className: "draw-save",
+      onClick: () => {
+        if (!drawCanvasEl) return;
+        const dataUrl = drawCanvasEl.toDataURL("image/png");
+        saveSnapshot(dataUrl, state.identity);
+        saveBtn.textContent = "✓";
+        setTimeout(() => {
+          if (saveBtn.isConnected) saveBtn.textContent = "save";
+        }, 1200);
+      },
+    },
+    "save",
+  );
   canvasWrap.appendChild(saveBtn);
 
-  const clearBtn = el('button', { className: 'draw-clear', onClick: () => {
-    state.drawRedoStack = [];
-    clearCanvas();
-  }}, 'clear');
+  const clearBtn = el(
+    "button",
+    {
+      className: "draw-clear",
+      onClick: () => {
+        state.drawRedoStack = [];
+        clearCanvas();
+      },
+    },
+    "clear",
+  );
   canvasWrap.appendChild(clearBtn);
 
   setTimeout(() => {
     canvas.width = 520;
     canvas.height = 340;
     drawCanvasEl = canvas;
-    drawOffscreen = document.createElement('canvas');
+    drawOffscreen = document.createElement("canvas");
     drawOffscreen.width = 520;
     drawOffscreen.height = 340;
     renderCommittedStrokes();
@@ -483,7 +764,12 @@ function renderDraw() {
     function startDraw(e) {
       e.preventDefault();
       drawing = true;
-      state.currentStroke = { points: [point(e)], color: state.drawColor, width: 3, from: state.identity };
+      state.currentStroke = {
+        points: [point(e)],
+        color: state.drawColor,
+        width: 3,
+        from: state.identity,
+      };
     }
 
     function moveDraw(e) {
@@ -508,67 +794,80 @@ function renderDraw() {
       state.currentStroke = null;
     }
 
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('touchstart', startDraw);
-    canvas.addEventListener('mousemove', moveDraw);
-    canvas.addEventListener('touchmove', moveDraw);
-    canvas.addEventListener('mouseup', endDraw);
-    canvas.addEventListener('mouseleave', endDraw);
-    canvas.addEventListener('touchend', endDraw);
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("touchstart", startDraw);
+    canvas.addEventListener("mousemove", moveDraw);
+    canvas.addEventListener("touchmove", moveDraw);
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mouseleave", endDraw);
+    canvas.addEventListener("touchend", endDraw);
   }, 0);
 
-  const drawPalette = state.theme === 'dark' ? DRAW_COLORS_DARK : DRAW_COLORS;
+  const drawPalette = state.theme === "dark" ? DRAW_COLORS_DARK : DRAW_COLORS;
   if (!drawPalette.includes(state.drawColor)) state.drawColor = drawPalette[1];
 
-  sidebar.appendChild(el('div', { className: 'draw-color-label' }, 'COLOR'));
-  const colors = el('div', { className: 'draw-colors' });
+  sidebar.appendChild(el("div", { className: "draw-color-label" }, "COLOR"));
+  const colors = el("div", { className: "draw-colors" });
   for (const c of drawPalette) {
-    const swatch = el('button', {
-      className: `draw-swatch ${state.drawColor === c ? 'active' : ''}`,
+    const swatch = el("button", {
+      className: `draw-swatch ${state.drawColor === c ? "active" : ""}`,
       style: { background: c },
       onClick: () => {
         state.drawColor = c;
-        document.querySelectorAll('.draw-swatch').forEach(s => s.classList.remove('active'));
-        swatch.classList.add('active');
+        document
+          .querySelectorAll(".draw-swatch")
+          .forEach((s) => s.classList.remove("active"));
+        swatch.classList.add("active");
       },
     });
     colors.appendChild(swatch);
   }
   sidebar.appendChild(colors);
-  sidebar.appendChild(el('div', { style: { flex: '1' } }));
+  sidebar.appendChild(el("div", { style: { flex: "1" } }));
 
   const count = state.canvasSnapshots.length;
-  sidebar.appendChild(el('button', {
-    className: 'draw-gallery-btn',
-    onClick: () => {
-      drawCanvasEl = null;
-      drawOffscreen = null;
-      state.drawView = 'gallery';
-      render();
-    },
-  }, count > 0 ? `◧${count}` : '◧'));
+  sidebar.appendChild(
+    el(
+      "button",
+      {
+        className: "draw-gallery-btn",
+        onClick: () => {
+          drawCanvasEl = null;
+          drawOffscreen = null;
+          state.drawView = "gallery";
+          render();
+        },
+      },
+      count > 0 ? `◧${count}` : "◧",
+    ),
+  );
 
-  const grid = el('div', { className: 'draw-grid' }, canvasWrap, sidebar);
-  return renderWindow('DRAW.EXE', 'var(--green)', 'var(--green)', grid);
+  const grid = el("div", { className: "draw-grid" }, canvasWrap, sidebar);
+  return renderWindow("DRAW.EXE", "var(--green)", "var(--green)", grid);
 }
 
 function renderNote() {
-  const wrap = el('div', { className: 'note-wrap' });
-  wrap.appendChild(el('div', { className: 'note-to' }, 'TO: sam@home ◂ FROM: me'));
+  const wrap = el("div", { className: "note-wrap" });
+  wrap.appendChild(
+    el("div", { className: "note-to" }, "TO: sam@home ◂ FROM: me"),
+  );
 
-  const display = el('div', {
-    className: 'note-text-display bevel-recessed',
+  const display = el("div", {
+    className: "note-text-display bevel-recessed",
     onClick: () => {
       const kb = ensureKeyboard();
-      if (!kb.isOpen()) { bindNoteKeyboard(); kb.open(); }
+      if (!kb.isOpen()) {
+        bindNoteKeyboard();
+        kb.open();
+      }
     },
   });
   if (state.noteText) display.textContent = state.noteText;
-  const caret = el('span', { className: 'note-caret' });
+  const caret = el("span", { className: "note-caret" });
   display.appendChild(caret);
   wrap.appendChild(display);
 
-  const charCount = el('span', {}, `${state.noteText.length} chars`);
+  const charCount = el("span", {}, `${state.noteText.length} chars`);
 
   function refreshDisplay() {
     display.textContent = state.noteText;
@@ -580,7 +879,7 @@ function renderNote() {
   function send() {
     if (state.noteText.trim()) {
       fbSendNote(state.noteText, state.identity);
-      state.noteText = '';
+      state.noteText = "";
       refreshDisplay();
     }
     flashSend();
@@ -588,31 +887,60 @@ function renderNote() {
 
   function bindNoteKeyboard() {
     const kb = ensureKeyboard();
-    kb.setLabel('KEYS.SYS');
+    kb.setLabel("KEYS.SYS");
     kb.setHandlers({
-      onKey: (ch) => { state.noteText += ch; refreshDisplay(); },
-      onBackspace: () => { state.noteText = state.noteText.slice(0, -1); refreshDisplay(); },
-      onEnter: () => { state.noteText += '\n'; refreshDisplay(); },
-      onClose: () => { state.noteKbDismissed = true; renderShowKeysButton(); },
+      onKey: (ch) => {
+        state.noteText += ch;
+        refreshDisplay();
+      },
+      onBackspace: () => {
+        state.noteText = state.noteText.slice(0, -1);
+        refreshDisplay();
+      },
+      onEnter: () => {
+        state.noteText += "\n";
+        refreshDisplay();
+      },
+      onClose: () => {
+        state.noteKbDismissed = true;
+        renderShowKeysButton();
+      },
       onSubmit: () => send(),
     });
   }
 
-  const sendBtn = el('button', {
-    className: `btn-send-sm ${state.sentFlash ? 'sent' : 'default'}`,
-    onClick: send,
-  }, state.sentFlash ? '✓ delivered' : 'send ▸');
+  const sendBtn = el(
+    "button",
+    {
+      className: `btn-send-sm ${state.sentFlash ? "sent" : "default"}`,
+      onClick: send,
+    },
+    state.sentFlash ? "✓ delivered" : "send ▸",
+  );
 
-  const footer = el('div', { className: 'note-footer' }, charCount);
-  const rightGroup = el('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } });
+  const footer = el("div", { className: "note-footer" }, charCount);
+  const rightGroup = el("div", {
+    style: { display: "flex", gap: "6px", alignItems: "center" },
+  });
   function renderShowKeysButton() {
-    rightGroup.innerHTML = '';
+    rightGroup.innerHTML = "";
     const kb = ensureKeyboard();
     if (!kb.isOpen()) {
-      rightGroup.appendChild(el('button', {
-        className: 'note-show-keys',
-        onClick: () => { state.noteKbDismissed = false; bindNoteKeyboard(); ensureKeyboard().open(); renderShowKeysButton(); },
-      }, 'show keys ▴'));
+      rightGroup.appendChild(
+        el(
+          "button",
+          {
+            className: "note-show-keys",
+            onClick: () => {
+              state.noteKbDismissed = false;
+              bindNoteKeyboard();
+              ensureKeyboard().open();
+              renderShowKeysButton();
+            },
+          },
+          "show keys ▴",
+        ),
+      );
     }
     rightGroup.appendChild(sendBtn);
   }
@@ -624,33 +952,146 @@ function renderNote() {
   // Don't auto-open — wait for the user to tap the field or "show keys".
   bindNoteKeyboard();
 
-  return renderWindow('NOTE.TXT', 'var(--blue)', 'var(--blue)', wrap);
+  return renderWindow("NOTE.TXT", "var(--blue)", "var(--blue)", wrap);
 }
 
 function renderMood() {
-  const grid = el('div', { className: 'mood-grid' });
+  const wrap = el("div", { className: "mood-wrap" });
+
+  const grid = el("div", { className: "mood-grid" });
   for (const m of MOODS) {
-    grid.appendChild(el('button', {
-      className: `mood-btn ${state.mood === m.k ? 'picked' : 'inactive'}`,
-      onClick: () => {
-        state.mood = m.k;
-        fbSetMood(m.k, state.identity);
-        render();
-        flashSend();
-      },
-    },
-      el('span', { className: 'mood-ascii' }, m.ascii),
-      el('span', { className: 'mood-label' }, m.t),
-    ));
+    grid.appendChild(
+      el(
+        "button",
+        {
+          className: `mood-btn ${state.mood === m.k ? "picked" : "inactive"}`,
+          onClick: () => {
+            state.mood = m.k;
+            state.customStatusInput = "";
+            fbSetMood(m.k, state.identity);
+            render();
+            flashSend();
+          },
+        },
+        el("span", { className: "mood-ascii" }, m.ascii),
+        el("span", { className: "mood-label" }, m.t),
+      ),
+    );
   }
-  return renderWindow('MOOD.CFG', 'var(--pink-deep)', 'var(--pink-deep)', grid);
+  wrap.appendChild(grid);
+
+  // Custom status row
+  const customWrap = el("div", { className: "mood-custom" });
+  customWrap.appendChild(
+    el("div", { className: "mood-custom-label" }, "custom //"),
+  );
+
+  const field = el(
+    "div",
+    {
+      id: "mood-custom-field",
+      className: `mood-custom-field bevel-recessed ${state.customStatusInput ? "" : "empty"}`,
+      onClick: openCustomStatusKb,
+    },
+    state.customStatusInput || "tap to type your own status…",
+  );
+  customWrap.appendChild(field);
+
+  const actions = el(
+    "div",
+    { className: "mood-custom-actions" },
+    el(
+      "button",
+      {
+        className: "settings-btn",
+        onClick: () => {
+          state.customStatusInput = "";
+          renderCustomStatusField();
+        },
+      },
+      "clear",
+    ),
+    state.customStatusKbDismissed
+      ? el(
+          "button",
+          { className: "settings-btn", onClick: openCustomStatusKb },
+          "show keys ▴",
+        )
+      : null,
+    el(
+      "button",
+      {
+        className: "btn-send-sm default",
+        onClick: sendCustomStatus,
+      },
+      "send ▸",
+    ),
+  );
+  customWrap.appendChild(actions);
+  wrap.appendChild(customWrap);
+
+  return renderWindow(
+    "MOOD.CFG",
+    "var(--pink-deep)",
+    "var(--pink-deep)",
+    wrap,
+  );
+}
+
+function renderCustomStatusField() {
+  const f = document.getElementById("mood-custom-field");
+  if (!f) return;
+  f.textContent = state.customStatusInput || "tap to type your own status…";
+  f.classList.toggle("empty", !state.customStatusInput);
+}
+
+function bindCustomStatusKeyboard() {
+  const kb = ensureKeyboard();
+  kb.setLabel("STATUS");
+  kb.setHandlers({
+    onKey: (ch) => {
+      state.customStatusInput += ch;
+      renderCustomStatusField();
+    },
+    onBackspace: () => {
+      state.customStatusInput = state.customStatusInput.slice(0, -1);
+      renderCustomStatusField();
+    },
+    onEnter: () => sendCustomStatus(),
+    onClose: () => {
+      state.customStatusKbDismissed = true;
+      render();
+    },
+    onSubmit: () => sendCustomStatus(),
+  });
+}
+
+function openCustomStatusKb() {
+  state.customStatusKbDismissed = false;
+  bindCustomStatusKeyboard();
+  ensureKeyboard().open();
+}
+
+function sendCustomStatus() {
+  const text = state.customStatusInput.trim();
+  if (!text) {
+    flashSend();
+    return;
+  }
+  fbSetMood("custom", state.identity, text);
+  state.mood = "custom";
+  state.moodCustom = text;
+  state.customStatusInput = "";
+  if (keyboard) keyboard.close();
+  render();
+  flashSend();
 }
 
 function fmtDuration(ms) {
-  if (!ms) return '0:00';
+  if (!ms) return "0:00";
   const m = Math.floor(ms / 60000);
   const s = Math.floor((ms % 60000) / 1000);
-  return `${m}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 function estimateProgress(pb) {
@@ -667,89 +1108,128 @@ function tickMusicProgress() {
   const progress = estimateProgress(pb);
   const duration = pb.nowPlaying.durationMs || 1;
   const pct = Math.min((progress / duration) * 100, 100);
-  const fill = document.getElementById('music-prog-fill');
-  const cur = document.getElementById('music-time-cur');
-  if (fill) fill.style.width = pct + '%';
+  const fill = document.getElementById("music-prog-fill");
+  const cur = document.getElementById("music-time-cur");
+  if (fill) fill.style.width = pct + "%";
   if (cur) cur.textContent = fmtDuration(progress);
 }
 
 function renderMusic() {
   const pb = state.partnerPlayback;
-  const wrap = el('div', { className: 'music-wrap' });
+  const wrap = el("div", { className: "music-wrap" });
 
-  const partnerLabel = state.identity === 'her' ? 'stanley' : 'sam';
-  wrap.appendChild(el('div', { className: 'music-header' },
-    `NOW PLAYING ▸ ${partnerLabel}'s spotify`));
+  const partnerLabel = state.identity === "her" ? "alex" : "sam";
+  wrap.appendChild(
+    el(
+      "div",
+      { className: "music-header" },
+      `NOW PLAYING ▸ ${partnerLabel}'s spotify`,
+    ),
+  );
 
-  const body = el('div', { className: 'music-body bevel-recessed' });
+  const body = el("div", { className: "music-body bevel-recessed" });
 
   if (!pb || !pb.nowPlaying) {
-    body.appendChild(el('div', { className: 'music-empty' },
-      `${partnerLabel} isn't playing anything`));
+    body.appendChild(
+      el(
+        "div",
+        { className: "music-empty" },
+        `${partnerLabel} isn't playing anything`,
+      ),
+    );
     wrap.appendChild(body);
-    return renderWindow('JUKEBOX.WAV', 'var(--green)', 'var(--green)', wrap);
+    return renderWindow("JUKEBOX.WAV", "var(--green)", "var(--green)", wrap);
   }
 
   const track = pb.nowPlaying;
   const coverEl = track.albumArt
-    ? el('img', { className: 'music-cover-img', src: track.albumArt })
-    : el('div', { className: 'music-cover' }, '♪');
+    ? el("img", { className: "music-cover-img", src: track.albumArt })
+    : el("div", { className: "music-cover" }, "♪");
 
-  body.appendChild(el('div', { className: 'music-track' },
-    coverEl,
-    el('div', { className: 'music-track-info' },
-      el('div', { className: 'music-track-name' }, track.name),
-      el('div', { className: 'music-meta-sub' }, track.artist),
+  body.appendChild(
+    el(
+      "div",
+      { className: "music-track" },
+      coverEl,
+      el(
+        "div",
+        { className: "music-track-info" },
+        el("div", { className: "music-track-name" }, track.name),
+        el("div", { className: "music-meta-sub" }, track.artist),
+      ),
     ),
-  ));
+  );
 
   const duration = track.durationMs || 1;
   const progress = estimateProgress(pb);
   const pct = Math.min((progress / duration) * 100, 100);
-  const progressBar = el('div', { className: 'music-progress' },
-    el('div', { className: 'music-progress-fill', id: 'music-prog-fill', style: { width: pct + '%' } }),
+  const progressBar = el(
+    "div",
+    { className: "music-progress" },
+    el("div", {
+      className: "music-progress-fill",
+      id: "music-prog-fill",
+      style: { width: pct + "%" },
+    }),
   );
-  const times = el('div', { className: 'music-times' },
-    el('span', { id: 'music-time-cur' }, fmtDuration(progress)),
-    el('span', {}, pb.isPlaying ? '▸ playing' : '❚❚ paused'),
-    el('span', {}, fmtDuration(duration)),
+  const times = el(
+    "div",
+    { className: "music-times" },
+    el("span", { id: "music-time-cur" }, fmtDuration(progress)),
+    el("span", {}, pb.isPlaying ? "▸ playing" : "❚❚ paused"),
+    el("span", {}, fmtDuration(duration)),
   );
   body.appendChild(progressBar);
   body.appendChild(times);
 
   if (pb.queue && pb.queue.length > 0) {
-    const queueEl = el('div', { className: 'music-tracklist' });
-    queueEl.appendChild(el('div', { className: 'music-section-label' }, 'QUEUE'));
+    const queueEl = el("div", { className: "music-tracklist" });
+    queueEl.appendChild(
+      el("div", { className: "music-section-label" }, "QUEUE"),
+    );
     for (const t of pb.queue) {
-      queueEl.appendChild(el('div', { className: 'music-tracklist-row' },
-        `· ${t.name} — ${t.artist}`));
+      queueEl.appendChild(
+        el(
+          "div",
+          { className: "music-tracklist-row" },
+          `· ${t.name} — ${t.artist}`,
+        ),
+      );
     }
     body.appendChild(queueEl);
   }
 
   if (pb.recent && pb.recent.length > 0) {
-    const recentEl = el('div', { className: 'music-tracklist' });
-    recentEl.appendChild(el('div', { className: 'music-section-label' }, 'RECENT'));
+    const recentEl = el("div", { className: "music-tracklist" });
+    recentEl.appendChild(
+      el("div", { className: "music-section-label" }, "RECENT"),
+    );
     for (const t of pb.recent) {
-      const ago = t.playedAt ? fmtMsgTime({ toDate: () => new Date(t.playedAt) }) : '';
-      recentEl.appendChild(el('div', { className: 'music-tracklist-row' },
-        el('span', {}, `· ${t.name} — ${t.artist} `),
-        el('span', { className: 'music-recent-time' }, ago),
-      ));
+      const ago = t.playedAt
+        ? fmtMsgTime({ toDate: () => new Date(t.playedAt) })
+        : "";
+      recentEl.appendChild(
+        el(
+          "div",
+          { className: "music-tracklist-row" },
+          el("span", {}, `· ${t.name} — ${t.artist} `),
+          el("span", { className: "music-recent-time" }, ago),
+        ),
+      );
     }
     body.appendChild(recentEl);
   }
 
   wrap.appendChild(body);
-  return renderWindow('JUKEBOX.WAV', 'var(--green)', 'var(--green)', wrap);
+  return renderWindow("JUKEBOX.WAV", "var(--green)", "var(--green)", wrap);
 }
 
 function toggleTheme() {
-  const oldColors = state.theme === 'dark' ? DRAW_COLORS_DARK : DRAW_COLORS;
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  const newColors = state.theme === 'dark' ? DRAW_COLORS_DARK : DRAW_COLORS;
-  document.documentElement.setAttribute('data-theme', state.theme);
-  localStorage.setItem('lovebox-theme', state.theme);
+  const oldColors = state.theme === "dark" ? DRAW_COLORS_DARK : DRAW_COLORS;
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  const newColors = state.theme === "dark" ? DRAW_COLORS_DARK : DRAW_COLORS;
+  document.documentElement.setAttribute("data-theme", state.theme);
+  localStorage.setItem("lovebox-theme", state.theme);
   if (keyboard) {
     keyboard.destroy();
     keyboard = null;
@@ -761,72 +1241,113 @@ function toggleTheme() {
 }
 
 function renderSettings() {
-  if (state.settingsView === 'wifi') return renderWifi();
+  if (state.settingsView === "wifi") return renderWifi();
 
-  const wrap = el('div', { className: 'settings-wrap' });
+  const wrap = el("div", { className: "settings-wrap" });
 
-  wrap.appendChild(el('div', { className: 'settings-section-label' }, 'DISPLAY'));
-  const displaySection = el('div', { className: 'settings-section bevel-recessed' });
+  wrap.appendChild(
+    el("div", { className: "settings-section-label" }, "DISPLAY"),
+  );
+  const displaySection = el("div", {
+    className: "settings-section bevel-recessed",
+  });
 
-  displaySection.appendChild(el('button', {
-    className: 'settings-btn',
-    onClick: () => toggleTheme(),
-  }, state.theme === 'dark' ? 'theme: dark ◑' : 'theme: light ◐'));
+  displaySection.appendChild(
+    el(
+      "button",
+      {
+        className: "settings-btn",
+        onClick: () => toggleTheme(),
+      },
+      state.theme === "dark" ? "theme: dark ◑" : "theme: light ◐",
+    ),
+  );
 
-  displaySection.appendChild(el('button', {
-    className: 'settings-btn',
-    onClick: () => enterSleep(),
-  }, 'sleep display ◐'));
+  displaySection.appendChild(
+    el(
+      "button",
+      {
+        className: "settings-btn",
+        onClick: () => enterSleep(),
+      },
+      "sleep display ◐",
+    ),
+  );
   wrap.appendChild(displaySection);
 
-  wrap.appendChild(el('div', { className: 'settings-section-label', style: { marginTop: '10px' } }, 'NETWORK'));
-  const netSection = el('div', { className: 'settings-section bevel-recessed' });
+  wrap.appendChild(
+    el(
+      "div",
+      { className: "settings-section-label", style: { marginTop: "10px" } },
+      "NETWORK",
+    ),
+  );
+  const netSection = el("div", {
+    className: "settings-section bevel-recessed",
+  });
   const netLabel = state.wifiStatus?.ssid
     ? `wi-fi: ${state.wifiStatus.ssid} ${signalGlyph(state.wifiStatus.signal)}`
-    : 'wi-fi ▸';
-  netSection.appendChild(el('button', {
-    className: 'settings-btn',
-    onClick: () => openWifi(),
-  }, netLabel));
+    : "wi-fi ▸";
+  netSection.appendChild(
+    el(
+      "button",
+      {
+        className: "settings-btn",
+        onClick: () => openWifi(),
+      },
+      netLabel,
+    ),
+  );
   if (state.wifiStatus?.ip) {
-    netSection.appendChild(el('div', { className: 'settings-info' }, `▸ ip ${state.wifiStatus.ip}`));
+    netSection.appendChild(
+      el("div", { className: "settings-info" }, `▸ ip ${state.wifiStatus.ip}`),
+    );
   }
   wrap.appendChild(netSection);
 
-  wrap.appendChild(el('div', { className: 'settings-section-label', style: { marginTop: '10px' } }, 'SYSTEM'));
-  const sysSection = el('div', { className: 'settings-section bevel-recessed' });
-  sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ lovebox//OS v1.0'));
-  sysSection.appendChild(el('div', { className: 'settings-info' }, '▸ lovebox · for sam'));
+  wrap.appendChild(
+    el(
+      "div",
+      { className: "settings-section-label", style: { marginTop: "10px" } },
+      "SYSTEM",
+    ),
+  );
+  const sysSection = el("div", {
+    className: "settings-section bevel-recessed",
+  });
+  sysSection.appendChild(
+    el("div", { className: "settings-info" }, "▸ lovebox//OS v1.0"),
+  );
   wrap.appendChild(sysSection);
 
   // Refresh wi-fi status in background each time settings is opened
   refreshWifiStatus();
 
-  return renderWindow('SYSTEM.CFG', 'var(--ink-soft)', 'var(--ink-soft)', wrap);
+  return renderWindow("SYSTEM.CFG", "var(--ink-soft)", "var(--ink-soft)", wrap);
 }
 
 // ── Wi-Fi ──
 function signalGlyph(sig) {
   const bars = sig >= 75 ? 4 : sig >= 50 ? 3 : sig >= 25 ? 2 : sig > 0 ? 1 : 0;
-  return '▮'.repeat(bars) + '▯'.repeat(4 - bars);
+  return "▮".repeat(bars) + "▯".repeat(4 - bars);
 }
 
 async function refreshWifiStatus() {
   try {
     const s = await getWifiStatus();
     state.wifiStatus = s;
-    if (state.active === 'settings') render();
+    if (state.active === "settings") render();
   } catch {
     // server not reachable (dev on Mac) — leave status null
   }
 }
 
 function openWifi() {
-  state.settingsView = 'wifi';
+  state.settingsView = "wifi";
   state.wifiError = null;
   state.wifiFeedback = null;
   state.wifiPwSsid = null;
-  state.wifiPwInput = '';
+  state.wifiPwInput = "";
   state.wifiPwKbDismissed = false;
   state.wifiDetailsSsid = null;
   state.wifiProfile = null;
@@ -835,9 +1356,9 @@ function openWifi() {
 }
 
 function backToSettings() {
-  state.settingsView = 'main';
+  state.settingsView = "main";
   state.wifiPwSsid = null;
-  state.wifiPwInput = '';
+  state.wifiPwInput = "";
   state.wifiPwKbDismissed = false;
   state.wifiFeedback = null;
   state.wifiDetailsSsid = null;
@@ -869,18 +1390,18 @@ async function toggleAutoconnect() {
   if (!state.wifiProfile?.exists || state.wifiBusy) return;
   const next = !state.wifiProfile.autoconnect;
   state.wifiBusy = true;
-  state.wifiFeedback = `setting autoconnect ${next ? 'on' : 'off'}…`;
+  state.wifiFeedback = `setting autoconnect ${next ? "on" : "off"}…`;
   render();
   try {
     const r = await setWifiAutoconnect(state.wifiDetailsSsid, next);
     if (r.ok) {
       state.wifiProfile = { ...state.wifiProfile, autoconnect: next };
-      state.wifiFeedback = `✓ autoconnect ${next ? 'on' : 'off'}`;
+      state.wifiFeedback = `✓ autoconnect ${next ? "on" : "off"}`;
     } else {
-      state.wifiFeedback = `✗ ${r.error || 'modify failed'}`;
+      state.wifiFeedback = `✗ ${r.error || "modify failed"}`;
     }
   } catch {
-    state.wifiFeedback = '✗ modify failed';
+    state.wifiFeedback = "✗ modify failed";
   } finally {
     state.wifiBusy = false;
     render();
@@ -902,10 +1423,10 @@ async function doDisconnect() {
       refreshWifiStatus();
       doWifiScan();
     } else {
-      state.wifiFeedback = `✗ ${r.error || 'disconnect failed'}`;
+      state.wifiFeedback = `✗ ${r.error || "disconnect failed"}`;
     }
   } catch {
-    state.wifiFeedback = '✗ disconnect failed';
+    state.wifiFeedback = "✗ disconnect failed";
   } finally {
     state.wifiBusy = false;
     render();
@@ -922,7 +1443,7 @@ async function doWifiScan() {
     state.wifiNetworks = r.networks || [];
     state.wifiError = r.error || null;
   } catch (e) {
-    state.wifiError = 'wi-fi unavailable on this host';
+    state.wifiError = "wi-fi unavailable on this host";
     state.wifiNetworks = [];
   } finally {
     state.wifiScanning = false;
@@ -932,12 +1453,21 @@ async function doWifiScan() {
 
 function bindWifiPwKeyboard() {
   const kb = ensureKeyboard();
-  kb.setLabel('PASSWORD');
+  kb.setLabel("PASSWORD");
   kb.setHandlers({
-    onKey: (ch) => { state.wifiPwInput += ch; renderWifiPwField(); },
-    onBackspace: () => { state.wifiPwInput = state.wifiPwInput.slice(0, -1); renderWifiPwField(); },
+    onKey: (ch) => {
+      state.wifiPwInput += ch;
+      renderWifiPwField();
+    },
+    onBackspace: () => {
+      state.wifiPwInput = state.wifiPwInput.slice(0, -1);
+      renderWifiPwField();
+    },
     onEnter: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
-    onClose: () => { state.wifiPwKbDismissed = true; render(); },
+    onClose: () => {
+      state.wifiPwKbDismissed = true;
+      render();
+    },
     onSubmit: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
   });
 }
@@ -949,8 +1479,8 @@ function openWifiKb() {
 }
 
 function renderWifiPwField() {
-  const f = document.getElementById('wifi-pw-field');
-  if (f) f.textContent = state.wifiPwInput || ' ';
+  const f = document.getElementById("wifi-pw-field");
+  if (f) f.textContent = state.wifiPwInput || " ";
 }
 
 async function doConnect(ssid, password) {
@@ -958,20 +1488,20 @@ async function doConnect(ssid, password) {
   state.wifiFeedback = `connecting to ${ssid}…`;
   render();
   try {
-    const r = await connectWifi(ssid, password || '');
+    const r = await connectWifi(ssid, password || "");
     if (r.ok) {
       state.wifiFeedback = `✓ connected to ${ssid}`;
       state.wifiPwSsid = null;
-      state.wifiPwInput = '';
+      state.wifiPwInput = "";
       state.wifiPwKbDismissed = false;
       if (keyboard) keyboard.close();
       refreshWifiStatus();
       doWifiScan();
     } else {
-      state.wifiFeedback = `✗ ${r.error || 'connection failed'}`;
+      state.wifiFeedback = `✗ ${r.error || "connection failed"}`;
     }
   } catch {
-    state.wifiFeedback = '✗ connection failed';
+    state.wifiFeedback = "✗ connection failed";
   } finally {
     state.wifiConnecting = null;
     render();
@@ -979,58 +1509,89 @@ async function doConnect(ssid, password) {
 }
 
 function renderWifi() {
-  const wrap = el('div', { className: 'settings-wrap' });
+  const wrap = el("div", { className: "settings-wrap" });
 
-  const header = el('div', { className: 'wifi-header' },
-    el('button', { className: 'settings-btn wifi-back', onClick: backToSettings }, '◂ back'),
-    el('button', {
-      className: 'settings-btn wifi-rescan',
-      onClick: doWifiScan,
-    }, state.wifiScanning ? 'scanning…' : 'rescan ↻'),
+  const header = el(
+    "div",
+    { className: "wifi-header" },
+    el(
+      "button",
+      { className: "settings-btn wifi-back", onClick: backToSettings },
+      "◂ back",
+    ),
+    el(
+      "button",
+      {
+        className: "settings-btn wifi-rescan",
+        onClick: doWifiScan,
+      },
+      state.wifiScanning ? "scanning…" : "rescan ↻",
+    ),
   );
   wrap.appendChild(header);
 
   if (state.wifiStatus?.ssid) {
-    wrap.appendChild(el('div', { className: 'settings-info' },
-      `▸ on ${state.wifiStatus.ssid}${state.wifiStatus.ip ? ' · ' + state.wifiStatus.ip : ''}`));
+    wrap.appendChild(
+      el(
+        "div",
+        { className: "settings-info" },
+        `▸ on ${state.wifiStatus.ssid}${state.wifiStatus.ip ? " · " + state.wifiStatus.ip : ""}`,
+      ),
+    );
   }
 
   if (state.wifiError) {
-    wrap.appendChild(el('div', { className: 'wifi-feedback err' }, state.wifiError));
+    wrap.appendChild(
+      el("div", { className: "wifi-feedback err" }, state.wifiError),
+    );
   }
   if (state.wifiFeedback) {
-    wrap.appendChild(el('div', { className: 'wifi-feedback' }, state.wifiFeedback));
+    wrap.appendChild(
+      el("div", { className: "wifi-feedback" }, state.wifiFeedback),
+    );
   }
 
   // Hide the network list while entering a password or showing details —
   // keeps the relevant panel visible above the on-screen keyboard.
   if (!state.wifiPwSsid && !state.wifiDetailsSsid) {
-    const list = el('div', { className: 'wifi-list bevel-recessed' });
+    const list = el("div", { className: "wifi-list bevel-recessed" });
     if (!state.wifiNetworks.length && !state.wifiScanning && !state.wifiError) {
-      list.appendChild(el('div', { className: 'settings-info' }, '▸ no networks'));
+      list.appendChild(
+        el("div", { className: "settings-info" }, "▸ no networks"),
+      );
     }
     for (const n of state.wifiNetworks) {
-      const secured = !!(n.security && n.security !== '' && n.security !== '--');
-      const row = el('button', {
-        className: `wifi-row ${n.in_use ? 'in-use' : ''}`,
-        onClick: () => {
-          if (n.in_use) {
-            openWifiDetails(n.ssid);
-          } else if (secured) {
-            state.wifiPwSsid = n.ssid;
-            state.wifiPwInput = '';
-            state.wifiPwKbDismissed = false;
-            state.wifiFeedback = null;
-            render();
-            setTimeout(openWifiKb, 0);
-          } else {
-            doConnect(n.ssid, '');
-          }
+      const secured = !!(
+        n.security &&
+        n.security !== "" &&
+        n.security !== "--"
+      );
+      const row = el(
+        "button",
+        {
+          className: `wifi-row ${n.in_use ? "in-use" : ""}`,
+          onClick: () => {
+            if (n.in_use) {
+              openWifiDetails(n.ssid);
+            } else if (secured) {
+              state.wifiPwSsid = n.ssid;
+              state.wifiPwInput = "";
+              state.wifiPwKbDismissed = false;
+              state.wifiFeedback = null;
+              render();
+              setTimeout(openWifiKb, 0);
+            } else {
+              doConnect(n.ssid, "");
+            }
+          },
         },
-      },
-        el('span', { className: 'wifi-bars' }, signalGlyph(n.signal)),
-        el('span', { className: 'wifi-ssid' }, n.ssid),
-        el('span', { className: 'wifi-meta' }, (secured ? '⚿ ' : '') + (n.in_use ? '✓' : '')),
+        el("span", { className: "wifi-bars" }, signalGlyph(n.signal)),
+        el("span", { className: "wifi-ssid" }, n.ssid),
+        el(
+          "span",
+          { className: "wifi-meta" },
+          n.in_use ? "✓ details ▸" : (secured ? "⚿" : ""),
+        ),
       );
       list.appendChild(row);
     }
@@ -1039,64 +1600,115 @@ function renderWifi() {
 
   if (state.wifiDetailsSsid) {
     const ssid = state.wifiDetailsSsid;
-    const detail = el('div', { className: 'wifi-pw bevel-recessed' });
-    detail.appendChild(el('div', { className: 'settings-section-label' }, ssid));
+    const detail = el("div", { className: "wifi-pw bevel-recessed" });
+    detail.appendChild(
+      el("div", { className: "settings-section-label" }, ssid),
+    );
 
     const ip = state.wifiStatus?.ssid === ssid ? state.wifiStatus.ip : null;
-    if (ip) detail.appendChild(el('div', { className: 'settings-info' }, `▸ ip ${ip}`));
+    if (ip)
+      detail.appendChild(
+        el("div", { className: "settings-info" }, `▸ ip ${ip}`),
+      );
 
     if (!state.wifiProfile) {
-      detail.appendChild(el('div', { className: 'settings-info' }, '▸ loading…'));
+      detail.appendChild(
+        el("div", { className: "settings-info" }, "▸ loading…"),
+      );
     } else if (!state.wifiProfile.exists) {
-      detail.appendChild(el('div', { className: 'settings-info' }, '▸ no saved profile'));
+      detail.appendChild(
+        el("div", { className: "settings-info" }, "▸ no saved profile"),
+      );
     } else {
       const ac = state.wifiProfile.autoconnect;
-      detail.appendChild(el('button', {
-        className: 'settings-btn wifi-toggle',
-        onClick: toggleAutoconnect,
-      }, `[${ac ? '✓' : ' '}] autoconnect`));
+      detail.appendChild(
+        el(
+          "button",
+          {
+            className: "settings-btn wifi-toggle",
+            onClick: toggleAutoconnect,
+          },
+          `[${ac ? "✓" : " "}] autoconnect`,
+        ),
+      );
     }
 
-    const actions = el('div', { className: 'wifi-pw-actions' },
-      el('button', {
-        className: 'settings-btn',
-        onClick: closeWifiDetails,
-      }, '◂ back'),
-      el('button', {
-        className: 'settings-btn',
-        onClick: doDisconnect,
-      }, state.wifiBusy ? '…' : 'disconnect'),
+    const actions = el(
+      "div",
+      { className: "wifi-pw-actions" },
+      el(
+        "button",
+        {
+          className: "settings-btn",
+          onClick: closeWifiDetails,
+        },
+        "◂ back",
+      ),
+      el(
+        "button",
+        {
+          className: "settings-btn",
+          onClick: doDisconnect,
+        },
+        state.wifiBusy ? "…" : "disconnect",
+      ),
     );
     detail.appendChild(actions);
     wrap.appendChild(detail);
   }
 
   if (state.wifiPwSsid) {
-    const pwBox = el('div', { className: 'wifi-pw bevel-recessed' });
-    pwBox.appendChild(el('div', { className: 'settings-section-label' }, `password · ${state.wifiPwSsid}`));
-    pwBox.appendChild(el('div', {
-      id: 'wifi-pw-field',
-      className: 'wifi-pw-field bevel-recessed',
-      onClick: openWifiKb,
-    }, state.wifiPwInput || ' '));
-    const actions = el('div', { className: 'wifi-pw-actions' },
-      el('button', {
-        className: 'settings-btn',
-        onClick: () => {
-          state.wifiPwSsid = null;
-          state.wifiPwInput = '';
-          state.wifiPwKbDismissed = false;
-          if (keyboard) keyboard.close();
-          render();
+    const pwBox = el("div", { className: "wifi-pw bevel-recessed" });
+    pwBox.appendChild(
+      el(
+        "div",
+        { className: "settings-section-label" },
+        `password · ${state.wifiPwSsid}`,
+      ),
+    );
+    pwBox.appendChild(
+      el(
+        "div",
+        {
+          id: "wifi-pw-field",
+          className: "wifi-pw-field bevel-recessed",
+          onClick: openWifiKb,
         },
-      }, 'cancel'),
+        state.wifiPwInput || " ",
+      ),
+    );
+    const actions = el(
+      "div",
+      { className: "wifi-pw-actions" },
+      el(
+        "button",
+        {
+          className: "settings-btn",
+          onClick: () => {
+            state.wifiPwSsid = null;
+            state.wifiPwInput = "";
+            state.wifiPwKbDismissed = false;
+            if (keyboard) keyboard.close();
+            render();
+          },
+        },
+        "cancel",
+      ),
       state.wifiPwKbDismissed
-        ? el('button', { className: 'settings-btn', onClick: openWifiKb }, 'show keys ▴')
+        ? el(
+            "button",
+            { className: "settings-btn", onClick: openWifiKb },
+            "show keys ▴",
+          )
         : null,
-      el('button', {
-        className: 'settings-btn',
-        onClick: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
-      }, state.wifiConnecting ? 'connecting…' : 'connect ▸'),
+      el(
+        "button",
+        {
+          className: "settings-btn",
+          onClick: () => doConnect(state.wifiPwSsid, state.wifiPwInput),
+        },
+        state.wifiConnecting ? "connecting…" : "connect ▸",
+      ),
     );
     pwBox.appendChild(actions);
     wrap.appendChild(pwBox);
@@ -1106,22 +1718,22 @@ function renderWifi() {
     }
   }
 
-  return renderWindow('WIFI.CFG', 'var(--ink-soft)', 'var(--ink-soft)', wrap);
+  return renderWindow("WIFI.CFG", "var(--ink-soft)", "var(--ink-soft)", wrap);
 }
 
 // ── Sleep mode ──
 function enterSleep() {
   state.sleeping = true;
-  const overlay = document.getElementById('sleep-overlay');
-  overlay.classList.add('active');
-  overlay.addEventListener('click', exitSleep, { once: true });
-  overlay.addEventListener('touchstart', exitSleep, { once: true });
+  const overlay = document.getElementById("sleep-overlay");
+  overlay.classList.add("active");
+  overlay.addEventListener("click", exitSleep, { once: true });
+  overlay.addEventListener("touchstart", exitSleep, { once: true });
 }
 
 function exitSleep() {
   state.sleeping = false;
-  const overlay = document.getElementById('sleep-overlay');
-  overlay.classList.remove('active');
+  const overlay = document.getElementById("sleep-overlay");
+  overlay.classList.remove("active");
 }
 
 // ── Send flash ──
@@ -1130,10 +1742,10 @@ function applySendFlash() {
   // can rebuild its sendBtn between flashSend() and the timeout (e.g. when the
   // sent message round-trips through Firebase and triggers render()), so we
   // can't hold onto a single ref.
-  const small = state.sentFlash ? '✓ delivered' : 'send ▸';
-  for (const b of document.querySelectorAll('.btn-send-sm')) {
-    b.classList.toggle('sent', state.sentFlash);
-    b.classList.toggle('default', !state.sentFlash);
+  const small = state.sentFlash ? "✓ delivered" : "send ▸";
+  for (const b of document.querySelectorAll(".btn-send-sm")) {
+    b.classList.toggle("sent", state.sentFlash);
+    b.classList.toggle("default", !state.sentFlash);
     b.textContent = small;
   }
 }
@@ -1148,77 +1760,116 @@ function flashSend() {
 }
 
 // ── Toast ──
-function showToast(msg) {
-  if (state.active === 'inbox') return;
-  state.incomingToast = msg;
-  const toast = document.getElementById('toast');
-  toast.innerHTML = '';
-  toast.classList.add('visible');
+let toastDismissTimer = null;
 
-  const card = el('div', { className: 'toast-card' },
-    el('div', { className: 'toast-header' },
-      el('span', {}, '◆ NEW MESSAGE'),
-      el('span', { className: 'toast-close', onClick: dismissToast }, '×'),
+function showToast(msg) {
+  if (state.active === "inbox") return;
+  state.incomingToast = msg;
+  const toast = document.getElementById("toast");
+  toast.innerHTML = "";
+
+  const card = el(
+    "div",
+    { className: "toast-card" },
+    el(
+      "div",
+      { className: "toast-header" },
+      el("span", {}, "◆ NEW MESSAGE"),
+      el("span", { className: "toast-close", onClick: dismissToast }, "×"),
     ),
-    el('div', { className: 'toast-body' },
-      el('div', { className: 'toast-from' }, `${msg.from === 'him' ? 'S:' : 'L:'} · now`),
-      el('div', { className: 'toast-text' }, `"${msg.text || '(drawing)'}"`),
+    el(
+      "div",
+      { className: "toast-body" },
+      el(
+        "div",
+        { className: "toast-from" },
+        `${msg.from === "him" ? "S:" : "L:"} · now`,
+      ),
+      el("div", { className: "toast-text" }, `"${msg.text || "(drawing)"}"`),
     ),
   );
   toast.appendChild(card);
+
+  // Restart the slide-in animation even if .visible was already set —
+  // CSS animations don't replay just by re-adding a class, so we strip
+  // both state classes, force a reflow, then add .visible fresh.
+  toast.classList.remove("visible", "leaving");
+  void toast.offsetWidth;
+  toast.classList.add("visible");
+
+  if (toastDismissTimer) clearTimeout(toastDismissTimer);
+  toastDismissTimer = setTimeout(dismissToast, 5000);
+
   renderTaskbar();
 }
 
 function dismissToast() {
+  if (toastDismissTimer) {
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = null;
+  }
   state.incomingToast = null;
-  const toast = document.getElementById('toast');
-  toast.classList.remove('visible');
-  toast.innerHTML = '';
+  const toast = document.getElementById("toast");
+  if (!toast.classList.contains("visible")) return;
+  toast.classList.add("leaving");
+  setTimeout(() => {
+    toast.classList.remove("visible", "leaving");
+    toast.innerHTML = "";
+  }, 300);
   renderTaskbar();
 }
 
 // ── Taskbar ──
 function renderTaskbar() {
-  const tb = document.getElementById('taskbar');
-  tb.innerHTML = '';
+  const tb = document.getElementById("taskbar");
+  tb.innerHTML = "";
 
   for (const m of MODULES) {
-    const btn = el('button', {
-      className: `tb-btn ${state.active === m.id ? 'active' : ''}`,
-      onClick: () => switchModule(m.id),
-    }, el('span', {}, m.glyph), m.label);
+    const btn = el(
+      "button",
+      {
+        className: `tb-btn ${state.active === m.id ? "active" : ""}`,
+        onClick: () => switchModule(m.id),
+      },
+      el("span", {}, m.glyph),
+      m.label,
+    );
     tb.appendChild(btn);
   }
 
-  tb.appendChild(el('div', { className: 'tb-spacer' }));
+  tb.appendChild(el("div", { className: "tb-spacer" }));
 
-  if (state.incomingToast && state.active !== 'inbox') {
-    tb.appendChild(el('span', { className: 'tb-incoming' }, '◆ new from him'));
+  if (state.incomingToast && state.active !== "inbox") {
+    tb.appendChild(el("span", { className: "tb-incoming" }, "◆ new from him"));
   }
 
-  const clockBtn = el('button', { className: 'tb-clock', onClick: () => switchModule('home') }, fmtTime(new Date()));
+  const clockBtn = el(
+    "button",
+    { className: "tb-clock", onClick: () => switchModule("home") },
+    fmtTime(new Date()),
+  );
   tb.appendChild(clockBtn);
 }
 
 // ── Module switching ──
 function switchModule(id) {
-  if (state.active === 'draw') {
+  if (state.active === "draw") {
     drawCanvasEl = null;
     drawOffscreen = null;
   }
   if (state.active !== id && keyboard) {
     keyboard.close();
   }
-  if (state.active === 'inbox' && id !== 'inbox') state.searchQuery = '';
-  if (state.active === 'note' && id !== 'note') state.noteKbDismissed = false;
-  if (state.active === 'settings' && id !== 'settings') {
-    state.settingsView = 'main';
+  if (state.active === "inbox" && id !== "inbox") state.searchQuery = "";
+  if (state.active === "note" && id !== "note") state.noteKbDismissed = false;
+  if (state.active === "settings" && id !== "settings") {
+    state.settingsView = "main";
     state.wifiPwSsid = null;
-    state.wifiPwInput = '';
+    state.wifiPwInput = "";
     state.wifiFeedback = null;
   }
   state.active = id;
-  if (id === 'inbox') {
+  if (id === "inbox") {
     dismissToast();
     for (const m of state.messages) {
       if (!m.read) markRead(m.id);
@@ -1229,8 +1880,8 @@ function switchModule(id) {
 
 // ── Main render ──
 function render() {
-  const desktop = document.getElementById('desktop');
-  desktop.innerHTML = '';
+  const desktop = document.getElementById("desktop");
+  desktop.innerHTML = "";
 
   const screens = {
     home: renderHome,
@@ -1249,7 +1900,8 @@ function render() {
 // ── Auth & Init ──
 function boot() {
   subscribeMessages((messages) => {
-    const isNew = state.lastMessageCount > 0 && messages.length > state.lastMessageCount;
+    const isNew =
+      state.lastMessageCount > 0 && messages.length > state.lastMessageCount;
     state.messages = messages;
     state.lastMessageCount = messages.length;
 
@@ -1257,7 +1909,7 @@ function boot() {
       showToast(messages[0]);
     }
 
-    if (state.active === 'draw') {
+    if (state.active === "draw") {
       renderTaskbar();
     } else {
       render();
@@ -1266,7 +1918,8 @@ function boot() {
 
   subscribeMood(partnerIdentity(), (moodDoc) => {
     state.mood = moodDoc.mood;
-    if (state.active === 'home') render();
+    state.moodCustom = moodDoc.custom || null;
+    if (state.active === "home") render();
   });
 
   subscribeCanvas((strokes) => {
@@ -1276,7 +1929,7 @@ function boot() {
 
   subscribeSnapshots((snapshots) => {
     state.canvasSnapshots = snapshots;
-    if (state.active === 'draw' && state.drawView === 'gallery') {
+    if (state.active === "draw" && state.drawView === "gallery") {
       render();
     }
   });
@@ -1284,29 +1937,29 @@ function boot() {
   subscribePlayback(partnerIdentity(), (data) => {
     state.partnerPlayback = data;
     state.playbackReceivedAt = Date.now();
-    if (state.active === 'play') render();
+    if (state.active === "play") render();
   });
 
   // Alex's location is settable via send.html; Sam's box stays in New York.
-  subscribeGeo('him', (geo) => {
+  subscribeGeo("him", (geo) => {
     state.geo.him = geo;
-    refreshWeatherFor('him');
+    refreshWeatherFor("him");
   });
-  refreshWeatherFor('her');
+  refreshWeatherFor("her");
   // Re-poll weather every 10 minutes.
   setInterval(refreshAllWeather, 10 * 60 * 1000);
 
   render();
 
   setInterval(() => {
-    if (state.active === 'home') {
+    if (state.active === "home") {
       render();
-    } else if (state.active === 'play') {
+    } else if (state.active === "play") {
       tickMusicProgress();
-      const clockBtn = document.querySelector('.tb-clock');
+      const clockBtn = document.querySelector(".tb-clock");
       if (clockBtn) clockBtn.textContent = fmtTime(new Date());
     } else {
-      const clockBtn = document.querySelector('.tb-clock');
+      const clockBtn = document.querySelector(".tb-clock");
       if (clockBtn) clockBtn.textContent = fmtTime(new Date());
     }
   }, 1000);
@@ -1316,7 +1969,7 @@ onAuth((user) => {
   if (user) {
     state.identity = getIdentity();
     if (!state.identity) {
-      document.getElementById('desktop').textContent = 'unknown user';
+      document.getElementById("desktop").textContent = "unknown user";
       return;
     }
     boot();
@@ -1329,8 +1982,10 @@ const email = import.meta.env.VITE_LB_EMAIL;
 const pass = import.meta.env.VITE_LB_PASS;
 if (email && pass) {
   signIn(email, pass).catch((err) => {
-    document.getElementById('desktop').textContent = `auth error: ${err.message}`;
+    document.getElementById("desktop").textContent =
+      `auth error: ${err.message}`;
   });
 } else {
-  document.getElementById('desktop').textContent = 'set VITE_LB_EMAIL and VITE_LB_PASS in .env';
+  document.getElementById("desktop").textContent =
+    "set VITE_LB_EMAIL and VITE_LB_PASS in .env";
 }
