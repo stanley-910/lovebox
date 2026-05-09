@@ -350,14 +350,16 @@ function renderHome() {
   const newest = state.messages[0];
   const rest = state.messages.slice(1, 4);
 
+  const partnerKey = partnerIdentity();
+  const myKey = state.identity || "her";
+  const partnerName = partnerKey === "him" ? "alex" : "sam";
+  const myName = myKey === "him" ? "alex" : "sam";
+  const partnerTime = partnerKey === "him" ? myTime : fmtTime(samTime);
+  const myDisplayTime = myKey === "him" ? myTime : fmtTime(samTime);
+
   const left = el(
     "div",
     { className: "home-left" },
-    el(
-      "div",
-      { className: "home-header" },
-      el("span", { className: "home-header-him" }, `◐ stanley · ${myTime}`),
-    ),
     el(
       "div",
       { className: "home-clock-wrap" },
@@ -381,8 +383,22 @@ function renderHome() {
     el(
       "div",
       { className: "home-footer" },
-      el("span", {}, fmtWeatherLine("her")),
-      el("span", {}, fmtWeatherLine("him")),
+      el(
+        "div",
+        { className: "home-footer-row" },
+        el(
+          "span",
+          { className: "home-header-him" },
+          `${partnerName} · ${partnerTime}`,
+        ),
+        el("span", {}, fmtWeatherLine(partnerKey)),
+      ),
+      el(
+        "div",
+        { className: "home-footer-row" },
+        el("span", {}, `${myName} · ${myDisplayTime}`),
+        el("span", {}, fmtWeatherLine(myKey)),
+      ),
     ),
   );
 
@@ -1555,6 +1571,31 @@ function renderWifi() {
   // keeps the relevant panel visible above the on-screen keyboard.
   if (!state.wifiPwSsid && !state.wifiDetailsSsid) {
     const list = el("div", { className: "wifi-list bevel-recessed" });
+    // Suppress accidental row taps that happen at the end of a touch-scroll
+    // gesture: if the pointer moved vertically more than a few px between
+    // down and up, swallow the synthetic click in capture phase before it
+    // reaches any row's onClick handler.
+    let touchStartY = null;
+    let touchScrolled = false;
+    list.addEventListener("pointerdown", (e) => {
+      touchStartY = e.clientY;
+      touchScrolled = false;
+    });
+    list.addEventListener("pointermove", (e) => {
+      if (touchStartY != null && Math.abs(e.clientY - touchStartY) > 8) {
+        touchScrolled = true;
+      }
+    });
+    list.addEventListener(
+      "click",
+      (e) => {
+        if (touchScrolled) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      },
+      true,
+    );
     if (!state.wifiNetworks.length && !state.wifiScanning && !state.wifiError) {
       list.appendChild(
         el("div", { className: "settings-info" }, "▸ no networks"),
