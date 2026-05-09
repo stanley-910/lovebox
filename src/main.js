@@ -1221,7 +1221,7 @@ function renderMusic() {
           el(
             "div",
             { className: "music-tracklist-row" },
-            `· ${t.name} — ${t.artist}`,
+            el("span", { className: "music-tracklist-text" }, `· ${t.name} — ${t.artist}`),
           ),
         );
       }

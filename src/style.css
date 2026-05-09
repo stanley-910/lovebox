@@ -924,7 +924,7 @@ body.kb-up .mood-custom {
 .music-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -1040,8 +1040,10 @@ body.kb-up .mood-custom {
 .music-col {
   flex: 1 1 0;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .music-split-divider {
@@ -1052,6 +1054,7 @@ body.kb-up .mood-custom {
 
 .music-tracklist-text {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1064,11 +1067,23 @@ body.kb-up .mood-custom {
   text-align: center;
 }
 
-/* In split layout, recent rows need flex to keep time pinned right */
+/* Rows in split layout use flex so the time stays pinned right and the
+   text span can truncate. Both queue and recent rows share this. */
 .music-col .music-tracklist-row {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Section label sticks to top of each scrolling column */
+.music-col .music-section-label {
+  position: sticky;
+  top: 0;
+  background: var(--cream);
+  padding-bottom: 2px;
+  z-index: 1;
 }
 
 /* Settings */
