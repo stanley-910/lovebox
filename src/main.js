@@ -407,7 +407,7 @@ function renderHome() {
     mailPreview.appendChild(
       el(
         "div",
-        { style: { color: "var(--ink-soft)", fontSize: "13px" } },
+        { style: { color: "var(--ink-soft)", fontSize: "20px" } },
         "no messages yet",
       ),
     );
