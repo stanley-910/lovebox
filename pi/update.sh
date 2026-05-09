@@ -11,15 +11,25 @@ if [ "${1:-}" = "--force" ] || [ "${1:-}" = "-f" ]; then
   FORCE=1
 fi
 
-git fetch origin
+# Each line gets prefixed with [HH:MM:SS] so cron-driven log tails are
+# easy to scan and a failed run shows up next to the timestamp.
+log() { echo "[$(date +%H:%M:%S)] $*"; }
+
+# Banner makes consecutive cron runs visually distinct in the log file.
+echo
+log "═══ update.sh start (force=$FORCE, pid=$$) ═══"
+
+git fetch origin --quiet
 LOCAL=$(git rev-parse HEAD)
 REMOTE=$(git rev-parse origin/main)
 
 CHANGED=""
 PULLED=0
 if [ "$LOCAL" != "$REMOTE" ]; then
-  echo "$(date): pulling $LOCAL → $REMOTE"
+  log "pulling ${LOCAL:0:7} → ${REMOTE:0:7}"
   CHANGED=$(git diff --name-only "$LOCAL" "$REMOTE")
+  log "changed files:"
+  echo "$CHANGED" | sed 's/^/    /'
   git merge --ff-only origin/main
   PULLED=1
 fi
@@ -33,26 +43,30 @@ if [ -d dist ]; then
 fi
 
 if [ "$PULLED" = "1" ] || [ "$FORCE" = "1" ] || [ "$DIST_TS" -lt "$HEAD_TS" ]; then
-  echo "$(date): building (pulled=$PULLED force=$FORCE dist_ts=$DIST_TS head_ts=$HEAD_TS)"
-  npm ci
-  npm run build
+  log "rebuilding (pulled=$PULLED force=$FORCE)"
+  # Suppress npm's noise; only show errors. npm ci writes nothing when deps
+  # already match package-lock — keeps cron logs clean on frontend-only changes.
+  npm ci --silent --no-audit --no-fund 2>&1 | tail -3
+  npm run build --silent 2>&1 | tail -3
   sudo systemctl restart lovebox-kiosk
-  echo "$(date): kiosk restarted"
+  log "kiosk restarted"
 fi
 
 # Pi-side service restarts: only when their own source file changed (or --force).
 changed_contains() { echo "$CHANGED" | grep -qxF "$1"; }
 
 if [ "$FORCE" = "1" ] || changed_contains "pi/sleep-server.py"; then
-  echo "$(date): restarting lovebox-sleep"
+  log "restarting lovebox-sleep"
   sudo systemctl restart lovebox-sleep
 fi
 
 if [ "$FORCE" = "1" ] || changed_contains "pi/spotify-service.js"; then
-  echo "$(date): restarting lovebox-spotify"
+  log "restarting lovebox-spotify"
   sudo systemctl restart lovebox-spotify
 fi
 
 if [ "$PULLED" = "0" ] && [ "$FORCE" = "0" ] && [ "$DIST_TS" -ge "$HEAD_TS" ]; then
-  echo "$(date): up to date — no changes"
+  log "up to date — no changes (HEAD ${LOCAL:0:7})"
 fi
+
+log "─── update.sh done ───"
