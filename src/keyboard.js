@@ -244,11 +244,29 @@ export function createKeyboard(opts = {}) {
     onSubmit: opts.onSubmit,
   };
 
-  const hideBtn = chromeBtn('hide ▾', false, () => { close(); handlers.onClose && handlers.onClose(); });
+  // Hide button uses 'click' instead of 'pointerdown' so the close happens
+  // AFTER the finger lifts. Closing on pointerdown removes the button from
+  // under the finger before pointerup, which causes a ghost click on the
+  // element underneath (e.g. the text field) and re-opens the keyboard.
+  const hideBtn = document.createElement('button');
+  hideBtn.type = 'button';
+  hideBtn.textContent = 'hide ▾';
   Object.assign(hideBtn.style, {
+    background: p.util,
+    color: p.utilText,
+    border: 'none',
+    boxShadow: `inset 1px 1px 0 ${p.bevelHi}, inset -1px -1px 0 ${p.bevelLo}`,
+    fontFamily: '"VT323", monospace',
     fontSize: '18px',
     padding: '4px 10px',
     minHeight: '30px',
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+  });
+  hideBtn.addEventListener('click', () => {
+    playKbClick('util');
+    close();
+    handlers.onClose && handlers.onClose();
   });
   barRight.appendChild(hideBtn);
 
@@ -353,12 +371,6 @@ export function createKeyboard(opts = {}) {
     isOpen = false;
     document.body.classList.remove('kb-up');
     root.style.display = 'none';
-    // Swallow the ghost click: when 'hide' fires on pointerdown and the
-    // keyboard disappears, the finger-lift generates a click on whatever's
-    // now under that touch point (e.g. the note text field), which would
-    // re-open the keyboard. Block all pointer events for ~350ms.
-    document.body.classList.add('kb-just-closed');
-    setTimeout(() => document.body.classList.remove('kb-just-closed'), 350);
   }
 
   function setLabel(s) {

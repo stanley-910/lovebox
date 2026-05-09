@@ -258,13 +258,6 @@ body.kb-up #taskbar {
   display: none;
 }
 
-/* Briefly swallow ghost clicks after the keyboard's 'hide' button fires on
-   pointerdown — without this, touchend lands on whatever is under the finger
-   (e.g. the text field) and immediately re-opens the keyboard. */
-body.kb-just-closed #desktop {
-  pointer-events: none;
-}
-
 .tb-btn {
   background: var(--win);
   color: var(--ink);
@@ -421,11 +414,18 @@ body.kb-just-closed #desktop {
 
 .home-footer {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 2px;
   font-size: 20px;
   color: var(--ink-soft);
   border-top: 1px dashed var(--dashed);
   padding-top: 6px;
+}
+
+.home-footer-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .home-right {
