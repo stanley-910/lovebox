@@ -1860,19 +1860,29 @@ function dismissToast() {
   renderTaskbar();
 }
 
+// Pixel-art home icon — peaked roof with a centered door.
+const HOME_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1" shape-rendering="crispEdges" style="display:block">
+  <path d="M1 7 L7 1.5 L13 7" />
+  <path d="M2.5 6.5 L2.5 12 L11.5 12 L11.5 6.5" />
+  <rect x="6" y="9" width="2" height="3" />
+</svg>`;
+
 // ── Taskbar ──
 function renderTaskbar() {
   const tb = document.getElementById("taskbar");
   tb.innerHTML = "";
 
   for (const m of MODULES) {
+    const glyphSpan = document.createElement("span");
+    if (m.id === "home") glyphSpan.innerHTML = HOME_ICON_SVG;
+    else glyphSpan.textContent = m.glyph;
     const btn = el(
       "button",
       {
         className: `tb-btn ${state.active === m.id ? "active" : ""}`,
         onClick: () => switchModule(m.id),
       },
-      el("span", {}, m.glyph),
+      glyphSpan,
       m.label,
     );
     tb.appendChild(btn);
