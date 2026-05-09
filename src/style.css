@@ -1006,14 +1006,14 @@ body.kb-up .mood-custom {
 .music-tracklist {
   font-size: var(--text-body);
   color: var(--ink-soft);
-  line-height: 1.4;
+  line-height: 1.5;
   overflow-y: auto;
 }
 
 .music-tracklist-row {
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .music-recent-time {
@@ -1044,6 +1044,7 @@ body.kb-up .mood-custom {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  padding-bottom: 6px;
 }
 
 .music-split-divider {
@@ -1074,7 +1075,7 @@ body.kb-up .mood-custom {
   align-items: baseline;
   gap: 6px;
   white-space: nowrap;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
 /* Section label sticks to top of each scrolling column */
