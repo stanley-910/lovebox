@@ -59,9 +59,9 @@ const MOODS = [
   },
   {
     k: "coffee",
-    ascii: "c[_] ( ◑ ◡ ◑ )",
-    t: "caffeinated",
-    status: "caffeinated c[_]",
+    ascii: "☕ ( ◑ ◡ ◑ )",
+    t: "coffee",
+    status: "coffee ☕",
   },
 ];
 
@@ -864,8 +864,15 @@ function renderDraw() {
 
 function renderNote() {
   const wrap = el("div", { className: "note-wrap" });
+  const partnerKey = partnerIdentity();
+  const partnerName = partnerKey === "him" ? "alex" : "sam";
+  const partnerLoc = partnerKey === "him" ? "away" : "home";
   wrap.appendChild(
-    el("div", { className: "note-to" }, "TO: sam@home ◂ FROM: me"),
+    el(
+      "div",
+      { className: "note-to" },
+      `TO: ${partnerName}@${partnerLoc} ◂ FROM: me`,
+    ),
   );
 
   const display = el("div", {
@@ -1198,42 +1205,60 @@ function renderMusic() {
   body.appendChild(progressBar);
   body.appendChild(times);
 
-  if (pb.queue && pb.queue.length > 0) {
-    const queueEl = el("div", { className: "music-tracklist" });
-    queueEl.appendChild(
+  const hasQueue = pb.queue && pb.queue.length > 0;
+  const hasRecent = pb.recent && pb.recent.length > 0;
+
+  if (hasQueue || hasRecent) {
+    const split = el("div", { className: "music-split" });
+
+    const queueCol = el("div", { className: "music-tracklist music-col" });
+    queueCol.appendChild(
       el("div", { className: "music-section-label" }, "QUEUE"),
     );
-    for (const t of pb.queue) {
-      queueEl.appendChild(
-        el(
-          "div",
-          { className: "music-tracklist-row" },
-          `· ${t.name} — ${t.artist}`,
-        ),
+    if (hasQueue) {
+      for (const t of pb.queue) {
+        queueCol.appendChild(
+          el(
+            "div",
+            { className: "music-tracklist-row" },
+            `· ${t.name} — ${t.artist}`,
+          ),
+        );
+      }
+    } else {
+      queueCol.appendChild(
+        el("div", { className: "music-tracklist-empty" }, "—"),
       );
     }
-    body.appendChild(queueEl);
-  }
 
-  if (pb.recent && pb.recent.length > 0) {
-    const recentEl = el("div", { className: "music-tracklist" });
-    recentEl.appendChild(
+    const recentCol = el("div", { className: "music-tracklist music-col" });
+    recentCol.appendChild(
       el("div", { className: "music-section-label" }, "RECENT"),
     );
-    for (const t of pb.recent) {
-      const ago = t.playedAt
-        ? fmtMsgTime({ toDate: () => new Date(t.playedAt) })
-        : "";
-      recentEl.appendChild(
-        el(
-          "div",
-          { className: "music-tracklist-row" },
-          el("span", {}, `· ${t.name} — ${t.artist} `),
-          el("span", { className: "music-recent-time" }, ago),
-        ),
+    if (hasRecent) {
+      for (const t of pb.recent) {
+        const ago = t.playedAt
+          ? fmtMsgTime({ toDate: () => new Date(t.playedAt) })
+          : "";
+        recentCol.appendChild(
+          el(
+            "div",
+            { className: "music-tracklist-row" },
+            el("span", { className: "music-tracklist-text" }, `· ${t.name} — ${t.artist}`),
+            el("span", { className: "music-recent-time" }, ago),
+          ),
+        );
+      }
+    } else {
+      recentCol.appendChild(
+        el("div", { className: "music-tracklist-empty" }, "—"),
       );
     }
-    body.appendChild(recentEl);
+
+    split.appendChild(queueCol);
+    split.appendChild(el("div", { className: "music-split-divider" }));
+    split.appendChild(recentCol);
+    body.appendChild(split);
   }
 
   wrap.appendChild(body);

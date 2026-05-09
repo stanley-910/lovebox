@@ -1028,6 +1028,49 @@ body.kb-up .mood-custom {
   text-align: center;
 }
 
+/* Queue ↕ Recent split — half / half with a vertical dashed divider */
+.music-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin-top: 6px;
+  gap: 10px;
+}
+
+.music-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.music-split-divider {
+  width: 1px;
+  background: var(--dashed);
+  flex-shrink: 0;
+}
+
+.music-tracklist-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-tracklist-empty {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  padding: 8px 0;
+  text-align: center;
+}
+
+/* In split layout, recent rows need flex to keep time pinned right */
+.music-col .music-tracklist-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 /* Settings */
 .settings-wrap {
   display: flex;
