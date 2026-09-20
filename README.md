@@ -114,30 +114,6 @@ Opens on `http://localhost:3000` with an in-memory backend (`src/demo.js`) seede
 
 For live iteration, `pi/kiosk-dev.sh` points the Pi's Chromium at your laptop's Vite server so HMR updates land on the physical screen.
 
-## Project layout
-
-```
-index.html          box UI entry
-send.html           standalone sender page
-src/
-  main.js           state, module renderers, taskbar, toast
-  firebase.js       Firestore subscriptions and writes, auth
-  demo.js           in-memory backend for `npm run demo`
-  keyboard.js       on-screen touch keyboard
-  wifi.js           Wi-Fi client with mock fallback
-  style.css         design system, light and dark themes
-pi/
-  setup.sh          one-shot Pi provisioning
-  update.sh         cron: pull, build, targeted restarts
-  sleep-server.py   display power, wake-on-touch, Wi-Fi endpoints
-  spotify-service.js  polls Spotify, mirrors to Firestore, runs queue commands
-  spotify-auth.js   one-time OAuth helper
-  *.service         systemd units
-  RUNBOOK.md        operations reference
-firestore.rules     security rules
-docs/screenshots/   images used in this README
-```
-
 ## Hardware
 
 - Raspberry Pi 3B+
