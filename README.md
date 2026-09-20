@@ -50,8 +50,6 @@ The settings module includes a Wi-Fi panel that scans, connects with a password 
 
 The jukebox section shows both accounts' current tracks. Paste a Spotify link and either **queue it** to add it after the current track on the box, or **play now** to start it immediately on the partner's active device. The command is written to Firestore and executed by the Pi's Spotify service using the target account's token.
 
-<img src="docs/screenshots/send.png" width="360" alt="sender page">
-
 ## Architecture
 
 ```mermaid
@@ -97,7 +95,7 @@ Opens on `http://localhost:3000` with an in-memory backend (`src/demo.js`) seede
 
 ### Against a real Firebase project
 
-1. Create a Firebase project with Auth (email/password) and Firestore. Put the web config in `src/firebase.js` and the two account UIDs in its `USERS` map.
+1. Create a Firebase project with Auth (email/password) and Firestore. Put the web config in `src/firebase.js` and the two account UIDs in its `USERS` map. Set display names and the box's home location in `NAMES`/`HOME` at the top of `src/main.js` and `PARTNER_NAME` in `send.html`.
 2. Deploy rules: `firebase deploy --only firestore:rules`.
 3. Create `.env` with the account the box should sign in as:
 

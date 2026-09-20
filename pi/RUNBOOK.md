@@ -154,7 +154,7 @@ Re-running OAuth (one user at a time — port 8888 conflict):
 sudo systemctl stop lovebox-sleep
 cd ~/lovebox && source ~/.nvm/nvm.sh
 SPOTIFY_CLIENT_ID=... SPOTIFY_CLIENT_SECRET=... node pi/spotify-auth.js her
-# open http://127.0.0.1:8888/login on the Pi browser, sign in as Sam
+# open http://127.0.0.1:8888/login on the Pi browser, sign in as the partner account
 sudo systemctl start lovebox-sleep
 sudo systemctl restart lovebox-spotify
 ```
@@ -214,7 +214,7 @@ ssh -t stanley@lovebox.local '~/lovebox/pi/kiosk-dev.sh http://192.168.1.42:3000
 The script stops `lovebox-kiosk`, launches Chromium pointed at your Mac, and **on Ctrl+C restores the normal kiosk service**. Vite HMR pushes changes straight to the Pi screen on save.
 
 Caveats:
-- Your Mac's `.env` decides which user is signed in (set Sam's creds to test as her).
+- Your Mac's `.env` decides which user is signed in (set the other account's creds to test as her).
 - Wi-Fi panel will show "wi-fi unavailable" — the kiosk is now hitting your Mac's port 8888, where nothing is listening. Expected.
 - macOS may prompt to allow incoming connections for Node — say yes.
 

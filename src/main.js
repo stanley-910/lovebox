@@ -102,6 +102,12 @@ const ASCII_DIGITS = {
   " ": ["   ", "   ", "   ", "   ", "   "],
 };
 
+// ── People and places ──
+// Display names and the box's fixed home location. Edit for your own setup.
+const NAMES = { him: "alex", her: "sam" };
+const HOME = { lat: 40.7128, lon: -74.006, label: "new york", tz: "America/New_York" };
+const AWAY_TZ = "America/Los_Angeles";
+
 // ── State ──
 const state = {
   identity: null, // 'him' or 'her', set after auth
@@ -139,7 +145,7 @@ const state = {
   wifiDetailsSsid: null,
   wifiProfile: null,
   wifiBusy: false,
-  geo: { him: null, her: { lat: 40.7128, lon: -74.006, label: "new york" } },
+  geo: { him: null, her: { lat: HOME.lat, lon: HOME.lon, label: HOME.label } },
   weather: { him: null, her: null },
 };
 
@@ -341,15 +347,11 @@ function renderWindow(title, accent, chip, body) {
 
 function renderHome() {
   const now = new Date();
-  const samTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/New_York" }),
-  );
-  const caliTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
-  );
+  const homeTime = new Date(now.toLocaleString("en-US", { timeZone: HOME.tz }));
+  const caliTime = new Date(now.toLocaleString("en-US", { timeZone: AWAY_TZ }));
   const myTime = fmtTime(caliTime);
-  const timeDigits = fmtTime(samTime).replace(/ (am|pm)/, "");
-  const ampm = samTime.getHours() >= 12 ? "pm" : "am";
+  const timeDigits = fmtTime(homeTime).replace(/ (am|pm)/, "");
+  const ampm = homeTime.getHours() >= 12 ? "pm" : "am";
   const moodData = MOODS.find((m) => m.k === state.mood) || MOODS[1];
   const unread = state.messages.filter((m) => !m.read);
   const newest = state.messages[0];
@@ -357,10 +359,10 @@ function renderHome() {
 
   const partnerKey = partnerIdentity();
   const myKey = state.identity || "her";
-  const partnerName = partnerKey === "him" ? "alex" : "sam";
-  const myName = myKey === "him" ? "alex" : "sam";
-  const partnerTime = partnerKey === "him" ? myTime : fmtTime(samTime);
-  const myDisplayTime = myKey === "him" ? myTime : fmtTime(samTime);
+  const partnerName = NAMES[partnerKey];
+  const myName = NAMES[myKey];
+  const partnerTime = partnerKey === "him" ? myTime : fmtTime(homeTime);
+  const myDisplayTime = myKey === "him" ? myTime : fmtTime(homeTime);
 
   const left = el(
     "div",
@@ -870,7 +872,7 @@ function renderDraw() {
 function renderNote() {
   const wrap = el("div", { className: "note-wrap" });
   const partnerKey = partnerIdentity();
-  const partnerName = partnerKey === "him" ? "alex" : "sam";
+  const partnerName = NAMES[partnerKey];
   const partnerLoc = partnerKey === "him" ? "away" : "home";
   wrap.appendChild(
     el(
@@ -1146,7 +1148,7 @@ function renderMusic() {
   const pb = state.partnerPlayback;
   const wrap = el("div", { className: "music-wrap" });
 
-  const partnerLabel = state.identity === "her" ? "alex" : "sam";
+  const partnerLabel = NAMES[partnerIdentity()];
   wrap.appendChild(
     el(
       "div",
@@ -2021,7 +2023,7 @@ function boot() {
     if (state.active === "play") render();
   });
 
-  // Alex's location is settable via send.html; Sam's box stays in New York.
+  // The away partner's location is settable via send.html; the box stays at HOME.
   subscribeGeo("him", (geo) => {
     state.geo.him = geo;
     refreshWeatherFor("him");

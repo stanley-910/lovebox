@@ -153,7 +153,7 @@
       <div class="login-error" id="loginError"></div>
     </div>
     <div class="body app-content" id="appContent">
-      <div class="label">MESSAGE TO SAM</div>
+      <div class="label">MESSAGE TO <span class="partner-name"></span></div>
       <textarea id="msg" placeholder="write something…"></textarea>
       <button class="btn" id="sendBtn" onclick="send()">send ▸</button>
       <div class="status" id="status"></div>
@@ -184,7 +184,7 @@
         <div class="label">JUKEBOX.CTRL</div>
         <div style="font-size:13px;color:#a83a52;margin-bottom:2px;">YOUR SPOTIFY</div>
         <div id="myPlayback" style="font-size:15px;color:#5a5040;margin-bottom:6px;">loading...</div>
-        <div style="font-size:13px;color:#5a78a8;margin-bottom:2px;">SAM'S SPOTIFY</div>
+        <div style="font-size:13px;color:#5a78a8;margin-bottom:2px;"><span class="partner-name"></span>'S SPOTIFY</div>
         <div id="herPlayback" style="font-size:15px;color:#5a5040;margin-bottom:6px;">loading...</div>
         <input class="login-input" id="spotifyUri" type="text" placeholder="spotify link or URI" style="height:auto;padding:6px 8px;font-size:16px;">
         <div style="display:flex;gap:4px;margin-top:4px;">
@@ -226,6 +226,10 @@
     });
     const db = getFirestore(app);
     const auth = getAuth(app);
+
+    // Display name of the partner with the box. Edit for your own setup.
+    const PARTNER_NAME = 'sam';
+    document.querySelectorAll('.partner-name').forEach((n) => { n.textContent = PARTNER_NAME.toUpperCase(); });
 
     function showApp() {
       document.getElementById('login').style.display = 'none';
@@ -306,7 +310,7 @@
       });
     }
 
-    // Reflect Alex's last-set status on load so a refresh doesn't
+    // Reflect the sender's last-set status on load so a refresh doesn't
     // make it look like the saved status was lost.
     const statusQ = query(
       collection(db, 'status'),
@@ -575,7 +579,7 @@
       });
     }
     bindPlayback('him', 'myPlayback', 'you aren\'t playing anything');
-    bindPlayback('her', 'herPlayback', 'sam isn\'t playing anything');
+    bindPlayback('her', 'herPlayback', `${PARTNER_NAME} isn't playing anything`);
 
     // ── Geolocation (drives home-screen weather) ──
     const geoCurrent = document.getElementById('geoCurrent');
