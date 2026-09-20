@@ -1,7 +1,12 @@
-import {
+// Demo mode (`npm run demo`) swaps the Firestore backend for an in-memory
+// one so the UI can be explored without credentials.
+const backend = import.meta.env.VITE_LB_DEMO
+  ? await import("./demo.js")
+  : await import("./firebase.js");
+const {
   subscribeMessages,
-  sendMessage as fbSendNote,
-  setMood as fbSetMood,
+  sendMessage: fbSendNote,
+  setMood: fbSetMood,
   subscribeMood,
   subscribeCanvas,
   addStroke,
@@ -15,7 +20,7 @@ import {
   getIdentity,
   subscribePlayback,
   subscribeGeo,
-} from "./firebase.js";
+} = backend;
 import { createKeyboard } from "./keyboard.js";
 import {
   getWifiStatus,
@@ -2056,7 +2061,9 @@ onAuth((user) => {
 // On the Pi, set VITE_LB_EMAIL and VITE_LB_PASS in a .env file.
 const email = import.meta.env.VITE_LB_EMAIL;
 const pass = import.meta.env.VITE_LB_PASS;
-if (email && pass) {
+if (import.meta.env.VITE_LB_DEMO) {
+  signIn();
+} else if (email && pass) {
   signIn(email, pass).catch((err) => {
     document.getElementById("desktop").textContent =
       `auth error: ${err.message}`;

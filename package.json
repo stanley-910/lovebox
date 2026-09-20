@@ -1,16 +1,16 @@
 {
   "name": "lovebox",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Raspberry Pi kiosk for a long-distance couple: realtime messages, shared canvas, mood status, and Spotify presence over Firestore.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "demo": "vite --mode demo"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "vite": "^8.0.10"
