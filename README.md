@@ -95,9 +95,9 @@ Opens on `http://localhost:3000` with an in-memory backend (`src/demo.js`) seede
 
 ### Against a real Firebase project
 
-1. Create a Firebase project with Auth (email/password) and Firestore. Put the web config in `src/firebase.js` and the two account UIDs in its `USERS` map. Set display names and the box's home location in `NAMES`/`HOME` at the top of `src/main.js` and `PARTNER_NAME` in `send.html`.
+1. Create a Firebase project with Auth (email/password) and Firestore. Put the two account UIDs in the `USERS` map in `src/firebase.js`. Set display names and the box's home location in `NAMES`/`HOME` at the top of `src/main.js` and `PARTNER_NAME` in `send.html`.
 2. Deploy rules: `firebase deploy --only firestore:rules`.
-3. Create `.env` with the account the box should sign in as:
+3. Copy `.env.example` to `.env`, fill in the Firebase web config (Project settings → Your apps), and add the account the box should sign in as:
 
    ```
    VITE_LB_EMAIL=...
