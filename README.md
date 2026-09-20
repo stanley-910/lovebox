@@ -6,15 +6,15 @@ A dedicated, always-on device for a long-distance relationship. A Raspberry Pi d
 
 ## What it does
 
-| Module | Title bar | What it shows |
-|---|---|---|
-| home | `ATRIUM.SYS` | Pixel clock, partner's current status, live weather for both cities, unread mail preview |
-| inbox | `MAIL.LOG` | Full message history with on-screen search |
-| draw | `DRAW.EXE` | Shared canvas synced stroke-by-stroke, with undo, redo, palette, and a gallery of saved drawings |
-| note | `NOTE.TXT` | Compose and send text using a custom on-screen keyboard |
-| mood | `MOOD.CFG` | Six ASCII moods plus free-text custom status, broadcast to the partner's home screen |
-| music | `JUKEBOX.WAV` | Partner's Spotify now-playing with interpolated progress, queue, and recent tracks |
-| sys | `SYSTEM.CFG` | Light and dark theme, display sleep, Wi-Fi scan and connect from the touchscreen |
+| Module | What it shows |
+|---|---|
+| home | Pixel clock, partner's current status, live weather for both cities, unread mail preview |
+| inbox | Full message history with on-screen search |
+| draw | Shared canvas synced stroke-by-stroke, with undo, redo, palette, and a gallery of saved drawings |
+| note | Compose and send text using a custom on-screen keyboard |
+| mood | Six ASCII moods plus free-text custom status, broadcast to the partner's home screen |
+| music | Partner's Spotify now-playing with interpolated progress, queue, and recent tracks |
+| sys | Light and dark theme, display sleep, Wi-Fi scan and connect from the touchscreen |
 
 Every module has light and dark themes driven by CSS custom properties on `[data-theme="dark"]`; the screenshots below alternate between them. Everything is plain JavaScript and CSS with no framework. The UI is rendered with a small `el()` helper and a single `render()` pass per screen, which keeps it responsive on a Pi 3B+.
 
