@@ -16,7 +16,7 @@ A dedicated, always-on device for a long-distance relationship. A Raspberry Pi d
 | music | `JUKEBOX.WAV` | Partner's Spotify now-playing with interpolated progress, queue, and recent tracks |
 | sys | `SYSTEM.CFG` | Light and dark theme, display sleep, Wi-Fi scan and connect from the touchscreen |
 
-Everything is plain JavaScript and CSS with no framework. The UI is rendered with a small `el()` helper and a single `render()` pass per screen, which keeps it responsive on a Pi 3B+.
+Every module has light and dark themes driven by CSS custom properties on `[data-theme="dark"]`; the screenshots below alternate between them. Everything is plain JavaScript and CSS with no framework. The UI is rendered with a small `el()` helper and a single `render()` pass per screen, which keeps it responsive on a Pi 3B+.
 
 ## On the box
 
@@ -44,19 +44,13 @@ The settings module includes a Wi-Fi panel that scans, connects with a password 
 
 ![wifi](docs/screenshots/wifi.png)
 
-### Dark theme
-
-Every module has a dark variant driven by CSS custom properties on `[data-theme="dark"]`.
-
-![home dark](docs/screenshots/home-dark.png)
-
 ## Sending from away
 
 `send.html` is a standalone page for the partner who is not with the box. It signs in with Firebase Auth and puts every channel on one screen: a message composer, the same shared canvas, mood and custom status, Spotify queue control, and a location field that drives the box's weather line.
 
 The jukebox section shows both accounts' current tracks. Paste a Spotify link and either **queue it** to add it after the current track on the box, or **play now** to start it immediately on the partner's active device. The command is written to Firestore and executed by the Pi's Spotify service using the target account's token.
 
-![sender page](docs/screenshots/send.png)
+<img src="docs/screenshots/send.png" width="360" alt="sender page">
 
 ## Architecture
 
