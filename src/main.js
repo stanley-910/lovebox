@@ -104,7 +104,8 @@ const ASCII_DIGITS = {
 
 // ── People and places ──
 // Display names and the box's fixed home location. Edit for your own setup.
-const NAMES = { him: "alex", her: "sam" };
+const NAMES = { him: "leo", her: "sam" };
+const initial = (who) => `${NAMES[who][0].toUpperCase()}:`;
 const HOME = { lat: 40.7128, lon: -74.006, label: "new york", tz: "America/New_York" };
 const AWAY_TZ = "America/Los_Angeles";
 
@@ -427,7 +428,7 @@ function renderHome() {
       {
         style: { color: x.from === "him" ? "var(--pink-deep)" : "var(--blue)" },
       },
-      `${x.from === "him" ? "S:" : "L:"}`,
+      initial(x.from),
     );
     const textSpan = el(
       "span",
@@ -562,7 +563,7 @@ function renderInbox() {
               color: m.from === "him" ? "var(--pink-deep)" : "var(--blue)",
             },
           },
-          m.from === "him" ? "S:" : "L:",
+          initial(m.from),
         ),
         el(
           "span",
@@ -1856,7 +1857,7 @@ function showToast(msg) {
       el(
         "div",
         { className: "toast-from" },
-        `${msg.from === "him" ? "S:" : "L:"} · now`,
+        `${initial(msg.from)} · now`,
       ),
       el("div", { className: "toast-text" }, `"${msg.text || "(drawing)"}"`),
     ),

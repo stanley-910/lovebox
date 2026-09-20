@@ -28,7 +28,7 @@ let snapshots = [];
 const playback = {
   isPlaying: true,
   progressMs: 74_000,
-  device: "Alex's Laptop",
+  device: "Leo's Laptop",
   nowPlaying: {
     name: "Pink + White",
     artist: "Frank Ocean",
