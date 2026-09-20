@@ -1,6 +1,6 @@
 # lovebox
 
-A dedicated, always-on device for a long-distance relationship. A Raspberry Pi drives a 5-inch touchscreen running a fullscreen web app styled like a retro terminal OS. One partner sends messages, doodles, moods, and songs from a phone-friendly web page; the other sees them arrive in realtime on the box sitting on their desk.
+A dedicated, always-on device for a long-distance relationship. A Raspberry Pi drives a 5-inch touchscreen running a fullscreen web app styled like a retro terminal OS. The partner who is away sends messages, doodles, moods, and songs from a phone-friendly web page; the other sees them arrive in realtime on the box sitting on their desk.
 
 ![home screen](docs/screenshots/home.png)
 
@@ -18,7 +18,7 @@ A dedicated, always-on device for a long-distance relationship. A Raspberry Pi d
 
 Everything is plain JavaScript and CSS with no framework. The UI is rendered with a small `el()` helper and a single `render()` pass per screen, which keeps it responsive on a Pi 3B+.
 
-## Screens
+## On the box
 
 ### Inbox
 
@@ -32,29 +32,15 @@ Every stroke is written to Firestore as its own document, so both sides see the 
 
 ![draw](docs/screenshots/draw.png)
 
-### Note
-
-Text entry goes through a custom touch keyboard (`src/keyboard.js`) sized for the 800x480 panel, with shift, numbers, and a submit action bound per screen.
-
-![note](docs/screenshots/note.png)
-
-### Mood
-
-Tap a mood or type a custom status. The latest status doc becomes the partner's `STATUS://` line on their home screen.
-
-![mood](docs/screenshots/mood.png)
-
 ### Music
 
-A service on the Pi polls both Spotify accounts and mirrors playback state into Firestore. The client interpolates the progress bar between polls so it moves smoothly. From the sender page the remote partner can push a track into the box's queue or force-play it.
+A service on the Pi polls both Spotify accounts and mirrors playback state into Firestore. The client interpolates the progress bar between polls so it moves smoothly.
 
 ![music](docs/screenshots/music.png)
 
-### System and Wi-Fi
+### Wi-Fi
 
-Theme toggle, display sleep, and a Wi-Fi panel that scans, connects with a password typed on the on-screen keyboard, and manages autoconnect. Off the Pi, the Wi-Fi client falls back to a mock so the UI is still testable.
-
-![settings](docs/screenshots/settings.png)
+The settings module includes a Wi-Fi panel that scans, connects with a password typed on the on-screen keyboard, and manages autoconnect. It talks to a small HTTP server on the Pi that wraps `nmcli`. Off the Pi, the client falls back to a mock so the UI is still testable.
 
 ![wifi](docs/screenshots/wifi.png)
 
@@ -64,15 +50,13 @@ Every module has a dark variant driven by CSS custom properties on `[data-theme=
 
 ![home dark](docs/screenshots/home-dark.png)
 
-![draw dark](docs/screenshots/draw-dark.png)
+## Sending from away
 
-![music dark](docs/screenshots/music-dark.png)
+`send.html` is a standalone page for the partner who is not with the box. It signs in with Firebase Auth and puts every channel on one screen: a message composer, the same shared canvas, mood and custom status, Spotify queue control, and a location field that drives the box's weather line.
 
-### Sender page
+The jukebox section shows both accounts' current tracks. Paste a Spotify link and either **queue it** to add it after the current track on the box, or **play now** to start it immediately on the partner's active device. The command is written to Firestore and executed by the Pi's Spotify service using the target account's token.
 
-`send.html` is a standalone page for the remote partner. It signs in with Firebase Auth and offers message, canvas, mood, Spotify queue control, and a location field that feeds the box's weather.
-
-![sender](docs/screenshots/send.png)
+![sender page](docs/screenshots/send.png)
 
 ## Architecture
 
