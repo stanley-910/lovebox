@@ -228,7 +228,7 @@
     const auth = getAuth(app);
 
     // Display name of the partner with the box. Edit for your own setup.
-    const PARTNER_NAME = 'sam';
+    const PARTNER_NAME = 'lydia';
     document.querySelectorAll('.partner-name').forEach((n) => { n.textContent = PARTNER_NAME.toUpperCase(); });
 
     function showApp() {
@@ -310,7 +310,7 @@
       });
     }
 
-    // Reflect the sender's last-set status on load so a refresh doesn't
+    // Reflect Stanley's last-set status on load so a refresh doesn't
     // make it look like the saved status was lost.
     const statusQ = query(
       collection(db, 'status'),

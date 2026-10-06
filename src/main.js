@@ -104,7 +104,7 @@ const ASCII_DIGITS = {
 
 // ── People and places ──
 // Display names and the box's fixed home location. Edit for your own setup.
-const NAMES = { him: "leo", her: "sam" };
+const NAMES = { him: "stanley", her: "lydia" };
 const initial = (who) => `${NAMES[who][0].toUpperCase()}:`;
 const HOME = { lat: 40.7128, lon: -74.006, label: "new york", tz: "America/New_York" };
 const AWAY_TZ = "America/Los_Angeles";
@@ -2024,7 +2024,7 @@ function boot() {
     if (state.active === "play") render();
   });
 
-  // The away partner's location is settable via send.html; the box stays at HOME.
+  // Stanley's location is settable via send.html; Lydia's box stays at HOME.
   subscribeGeo("him", (geo) => {
     state.geo.him = geo;
     refreshWeatherFor("him");
